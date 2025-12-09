@@ -1,12 +1,34 @@
 [project]
 name = "tensorlogic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Neural-symbolic AI framework unifying logical reasoning and tensor computation"
 readme = "README.md"
 requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "TensorLogic Contributors"}
+]
+keywords = ["neural-symbolic", "tensor", "logic", "ai", "mlx", "reasoning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 dependencies = [
-    "mlx>=0.20.0",
-    "numpy>=2.3.5",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+mlx = [
+    "mlx>=0.30.0",
+]
+all = [
+    "mlx>=0.30.0",
 ]
 
 [dependency-groups]
@@ -15,4 +37,5 @@ dev = [
     "mypy>=1.19.0",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
+    "ruff>=0.14.8",
 ]

@@ -17,8 +17,6 @@ from collections.abc import Callable
 
 import numpy as np
 
-from tensorlogic.backends.protocol import TensorBackend
-
 
 class NumpyBackend:
     """NumPy implementation of TensorBackend protocol.

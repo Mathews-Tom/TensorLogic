@@ -18,8 +18,6 @@ from collections.abc import Callable
 
 import mlx.core as mx
 
-from tensorlogic.backends.protocol import TensorBackend
-
 
 class MLXBackend:
     """MLX implementation of TensorBackend protocol.

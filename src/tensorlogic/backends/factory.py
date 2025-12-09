@@ -46,7 +46,7 @@ def create_backend(name: str = "mlx") -> TensorBackend:
 
     if name == "mlx":
         try:
-            from tensorlogic.backends.mlx import MLXBackend  # type: ignore[import-not-found]
+            from tensorlogic.backends.mlx import MLXBackend
 
             backend = MLXBackend()
         except ImportError as e:
@@ -63,10 +63,7 @@ def create_backend(name: str = "mlx") -> TensorBackend:
 
             backend = NumpyBackend()
         except ImportError as e:
-            msg = (
-                f"NumPy backend unavailable ({e}). "
-                "Install with: uv add numpy>=1.24.0"
-            )
+            msg = f"NumPy backend unavailable ({e}). Install with: uv add numpy>=1.24.0"
             raise ValueError(msg) from e
     elif name != "mlx":  # name is not "numpy" and not "mlx"
         available = ["mlx", "numpy"]
