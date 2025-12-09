@@ -158,8 +158,62 @@ def logical_not(a: Any, *, backend: TensorBackend) -> Any:
     return backend.subtract(ones, a)
 
 
+def logical_implies(a: Any, b: Any, *, backend: TensorBackend) -> Any:
+    """Logical implication via max(1-a, b).
+
+    Implements logical implication using the mathematical equivalence:
+    a → b = ¬a ∨ b = max(1-a, b)
+
+    For boolean tensors (values in {0.0, 1.0}), this correctly implements
+    the implication truth table: returns 0.0 only when a is 1.0 and b is 0.0.
+
+    Mathematical formulation:
+        a → b = ¬a ∨ b = max(1-a, b)
+
+    Truth table:
+        | a   | b   | a → b |
+        |-----|-----|-------|
+        | 0.0 | 0.0 | 1.0   |
+        | 0.0 | 1.0 | 1.0   |
+        | 1.0 | 0.0 | 0.0   |
+        | 1.0 | 1.0 | 1.0   |
+
+    Properties:
+        - Contrapositive: a → b ≡ ¬b → ¬a
+        - Modus ponens: (a ∧ (a → b)) → b (tautology)
+        - Material implication: a → b ≡ ¬a ∨ b
+        - Not commutative: a → b ≠ b → a (in general)
+        - Chain rule: ((a → b) ∧ (b → c)) → (a → c) (tautology)
+
+    Args:
+        a: Boolean tensor (antecedent, values in {0.0, 1.0})
+        b: Boolean tensor (consequent, same shape as a, or broadcastable)
+        backend: Tensor backend for operations
+
+    Returns:
+        Boolean tensor: 0.0 only where a is 1.0 and b is 0.0, 1.0 otherwise
+
+    Raises:
+        ValueError: If shapes are not broadcastable
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+        >>> a = np.array([1.0, 1.0, 0.0, 0.0])
+        >>> b = np.array([1.0, 0.0, 1.0, 0.0])
+        >>> result = logical_implies(a, b, backend=backend)
+        >>> result
+        array([1., 0., 1., 1.])
+    """
+    # Implementation: a → b = ¬a ∨ b = max(1-a, b)
+    not_a = logical_not(a, backend=backend)
+    return logical_or(not_a, b, backend=backend)
+
+
 __all__ = [
     "logical_and",
     "logical_or",
     "logical_not",
+    "logical_implies",
 ]

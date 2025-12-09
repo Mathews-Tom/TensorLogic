@@ -11,7 +11,12 @@ import numpy as np
 import pytest
 
 from tensorlogic.backends import create_backend
-from tensorlogic.core.operations import logical_and, logical_not, logical_or
+from tensorlogic.core.operations import (
+    logical_and,
+    logical_implies,
+    logical_not,
+    logical_or,
+)
 
 
 @pytest.fixture(params=["numpy", "mlx"])
@@ -326,6 +331,175 @@ class TestDeMorganLaws:
         np.testing.assert_allclose(left, right, atol=1e-7)
 
 
+class TestLogicalImplies:
+    """Tests for logical_implies operation."""
+
+    def test_truth_table(self, backend) -> None:
+        """Verify IMPLIES operation matches truth table."""
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+        b = np.array([1.0, 0.0, 1.0, 0.0])
+        expected = np.array([1.0, 0.0, 1.0, 1.0])
+
+        result = logical_implies(a, b, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_material_implication(self, backend) -> None:
+        """Verify a → b = ¬a ∨ b (material implication)."""
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+        b = np.array([1.0, 0.0, 1.0, 0.0])
+
+        # Direct implementation: a → b
+        result_implies = logical_implies(a, b, backend=backend)
+
+        # Equivalence: ¬a ∨ b
+        not_a = logical_not(a, backend=backend)
+        result_equiv = logical_or(not_a, b, backend=backend)
+
+        backend.eval(result_implies, result_equiv)
+        np.testing.assert_array_equal(result_implies, result_equiv)
+
+    def test_contrapositive(self, backend) -> None:
+        """Verify a → b ≡ ¬b → ¬a (contrapositive law)."""
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+        b = np.array([1.0, 0.0, 1.0, 0.0])
+
+        # a → b
+        result_forward = logical_implies(a, b, backend=backend)
+
+        # ¬b → ¬a
+        not_a = logical_not(a, backend=backend)
+        not_b = logical_not(b, backend=backend)
+        result_contrapositive = logical_implies(not_b, not_a, backend=backend)
+
+        backend.eval(result_forward, result_contrapositive)
+        np.testing.assert_array_equal(result_forward, result_contrapositive)
+
+    def test_modus_ponens(self, backend) -> None:
+        """Verify (a ∧ (a → b)) → b is a tautology."""
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+        b = np.array([1.0, 0.0, 1.0, 0.0])
+        ones = np.ones_like(a)
+
+        # a ∧ (a → b)
+        a_implies_b = logical_implies(a, b, backend=backend)
+        premise = logical_and(a, a_implies_b, backend=backend)
+
+        # (a ∧ (a → b)) → b
+        result = logical_implies(premise, b, backend=backend)
+        backend.eval(result)
+
+        # Should always be true (tautology)
+        np.testing.assert_array_equal(result, ones)
+
+    def test_chain_rule(self, backend) -> None:
+        """Verify ((a → b) ∧ (b → c)) → (a → c) is a tautology."""
+        a = np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+        b = np.array([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+        c = np.array([1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0])
+        ones = np.ones_like(a)
+
+        # (a → b) ∧ (b → c)
+        a_implies_b = logical_implies(a, b, backend=backend)
+        b_implies_c = logical_implies(b, c, backend=backend)
+        premise = logical_and(a_implies_b, b_implies_c, backend=backend)
+
+        # a → c
+        a_implies_c = logical_implies(a, c, backend=backend)
+
+        # ((a → b) ∧ (b → c)) → (a → c)
+        result = logical_implies(premise, a_implies_c, backend=backend)
+        backend.eval(result)
+
+        # Should always be true (tautology)
+        np.testing.assert_array_equal(result, ones)
+
+    def test_non_commutativity(self, backend) -> None:
+        """Verify a → b ≠ b → a (not commutative in general)."""
+        # Choose specific values where a → b ≠ b → a
+        a = np.array([1.0, 0.0])
+        b = np.array([0.0, 1.0])
+
+        result_ab = logical_implies(a, b, backend=backend)
+        result_ba = logical_implies(b, a, backend=backend)
+        backend.eval(result_ab, result_ba)
+
+        # a → b = [0.0, 1.0], b → a = [1.0, 0.0]
+        # They should NOT be equal
+        assert not np.array_equal(result_ab, result_ba)
+
+    def test_tautology_cases(self, backend) -> None:
+        """Verify tautology cases: a → a = 1, 0 → a = 1, a → 1 = 1."""
+        a = np.array([1.0, 0.0, 1.0, 0.0])
+        zeros = np.zeros_like(a)
+        ones = np.ones_like(a)
+
+        # a → a = 1 (tautology)
+        result_self = logical_implies(a, a, backend=backend)
+
+        # 0 → a = 1 (ex falso quodlibet)
+        result_false_antecedent = logical_implies(zeros, a, backend=backend)
+
+        # a → 1 = 1 (verum ex quolibet)
+        result_true_consequent = logical_implies(a, ones, backend=backend)
+
+        backend.eval(result_self, result_false_antecedent, result_true_consequent)
+
+        np.testing.assert_array_equal(result_self, ones)
+        np.testing.assert_array_equal(result_false_antecedent, ones)
+        np.testing.assert_array_equal(result_true_consequent, ones)
+
+    def test_contradiction_case(self, backend) -> None:
+        """Verify 1 → 0 = 0 (only false case)."""
+        ones = np.array([1.0, 1.0])
+        zeros = np.array([0.0, 0.0])
+        expected = np.array([0.0, 0.0])
+
+        result = logical_implies(ones, zeros, backend=backend)
+        backend.eval(result)
+
+        np.testing.assert_array_equal(result, expected)
+
+    def test_broadcasting(self, backend) -> None:
+        """Verify IMPLIES works with broadcasting."""
+        a = np.array([[1.0, 0.0], [1.0, 1.0]])
+        b = np.array([0.0, 1.0])  # Broadcasting over first dimension
+        expected = np.array([[0.0, 1.0], [0.0, 1.0]])
+
+        result = logical_implies(a, b, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_multidimensional(self, backend) -> None:
+        """Verify IMPLIES works with multidimensional tensors."""
+        a = np.array([[[1.0, 0.0], [0.0, 1.0]], [[1.0, 1.0], [0.0, 0.0]]])
+        b = np.array([[[1.0, 1.0], [0.0, 0.0]], [[1.0, 0.0], [1.0, 0.0]]])
+        expected = np.array([[[1.0, 1.0], [1.0, 0.0]], [[1.0, 0.0], [1.0, 1.0]]])
+
+        result = logical_implies(a, b, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_with_other_operations(self, backend) -> None:
+        """Verify IMPLIES composes correctly with AND/OR/NOT."""
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+        b = np.array([1.0, 0.0, 1.0, 0.0])
+        c = np.array([0.0, 1.0, 0.0, 1.0])
+
+        # (a → b) ∧ (b → c)
+        ab = logical_implies(a, b, backend=backend)
+        bc = logical_implies(b, c, backend=backend)
+        result = logical_and(ab, bc, backend=backend)
+        backend.eval(result)
+
+        # Manual calculation:
+        # a → b = [1, 0, 1, 1]
+        # b → c = [0, 1, 0, 1]
+        # (a → b) ∧ (b → c) = [0, 0, 0, 1]
+        expected = np.array([0.0, 0.0, 0.0, 1.0])
+        np.testing.assert_array_equal(result, expected)
+
+
 class TestEdgeCases:
     """Tests for edge cases and special values."""
 
@@ -337,12 +511,14 @@ class TestEdgeCases:
         result_and = logical_and(a, b, backend=backend)
         result_or = logical_or(a, b, backend=backend)
         result_not = logical_not(a, backend=backend)
+        result_implies = logical_implies(a, b, backend=backend)
 
-        backend.eval(result_and, result_or, result_not)
+        backend.eval(result_and, result_or, result_not, result_implies)
 
         np.testing.assert_array_equal(result_and, np.array([]))
         np.testing.assert_array_equal(result_or, np.array([]))
         np.testing.assert_array_equal(result_not, np.array([]))
+        np.testing.assert_array_equal(result_implies, np.array([]))
 
     def test_scalar_tensors(self, backend) -> None:
         """Verify operations work with scalar tensors."""
@@ -352,12 +528,14 @@ class TestEdgeCases:
         result_and = logical_and(a, b, backend=backend)
         result_or = logical_or(a, b, backend=backend)
         result_not = logical_not(a, backend=backend)
+        result_implies = logical_implies(a, b, backend=backend)
 
-        backend.eval(result_and, result_or, result_not)
+        backend.eval(result_and, result_or, result_not, result_implies)
 
         np.testing.assert_array_equal(result_and, 0.0)
         np.testing.assert_array_equal(result_or, 1.0)
         np.testing.assert_array_equal(result_not, 0.0)
+        np.testing.assert_array_equal(result_implies, 0.0)  # 1 → 0 = 0
 
     def test_large_tensors(self, backend) -> None:
         """Verify operations work efficiently with large tensors."""
@@ -368,9 +546,11 @@ class TestEdgeCases:
         result_and = logical_and(a, b, backend=backend)
         result_or = logical_or(a, b, backend=backend)
         result_not = logical_not(a, backend=backend)
+        result_implies = logical_implies(a, b, backend=backend)
 
-        backend.eval(result_and, result_or, result_not)
+        backend.eval(result_and, result_or, result_not, result_implies)
 
         np.testing.assert_array_equal(result_and, np.zeros(size))
         np.testing.assert_array_equal(result_or, np.ones(size))
         np.testing.assert_array_equal(result_not, np.zeros(size))
+        np.testing.assert_array_equal(result_implies, np.zeros(size))  # 1 → 0 = 0
