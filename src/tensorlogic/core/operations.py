@@ -5,6 +5,8 @@ following the mathematical equivalences from Domingos' Tensor Logic paper:
 - Logical AND: a ∧ b = a ⊙ b (Hadamard product)
 - Logical OR: a ∨ b = max(a, b)
 - Logical NOT: ¬a = 1 - a
+- Logical IMPLIES: a → b = max(1-a, b)
+- Step function: step(x) = 1 if x > 0 else 0 (Heaviside)
 
 All operations use the TensorBackend protocol abstraction for backend-agnostic
 implementation across MLX, NumPy, and future backends.
@@ -211,9 +213,55 @@ def logical_implies(a: Any, b: Any, *, backend: TensorBackend) -> Any:
     return logical_or(not_a, b, backend=backend)
 
 
+def step(x: Any, *, backend: TensorBackend) -> Any:
+    """Heaviside step function for boolean conversion.
+
+    Converts continuous values to discrete boolean {0.0, 1.0} values using
+    the Heaviside step function. Critical for quantifiers and hard logical
+    reasoning (deductive mode with temperature T=0).
+
+    Mathematical formulation:
+        step(x) = 1.0 if x > 0
+                  0.0 otherwise
+
+    Edge case handling:
+        - x = 0      → 0.0 (boundary convention)
+        - x = NaN    → 0.0 (treat invalid as false)
+        - x = +inf   → 1.0 (positive infinity is positive)
+        - x = -inf   → 0.0 (negative infinity is negative)
+
+    Properties:
+        - Discontinuous at x = 0
+        - Non-differentiable (use sigmoid approximation for gradient-based learning)
+        - Idempotent: step(step(x)) = step(x)
+
+    Args:
+        x: Input tensor (any real values)
+        backend: Tensor backend for operations
+
+    Returns:
+        Boolean tensor with values in {0.0, 1.0}
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+        >>> x = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
+        >>> result = step(x, backend=backend)
+        >>> result
+        array([0., 0., 0., 1., 1.])
+
+    Note:
+        Critical for converting continuous values to discrete boolean.
+        Used in quantifiers (EXISTS, FORALL) and rule application.
+    """
+    return backend.step(x)
+
+
 __all__ = [
     "logical_and",
     "logical_or",
     "logical_not",
     "logical_implies",
+    "step",
 ]

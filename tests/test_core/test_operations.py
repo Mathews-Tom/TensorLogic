@@ -16,6 +16,7 @@ from tensorlogic.core.operations import (
     logical_implies,
     logical_not,
     logical_or,
+    step,
 )
 
 
@@ -554,3 +555,159 @@ class TestEdgeCases:
         np.testing.assert_array_equal(result_or, np.ones(size))
         np.testing.assert_array_equal(result_not, np.zeros(size))
         np.testing.assert_array_equal(result_implies, np.zeros(size))  # 1 → 0 = 0
+
+
+class TestStep:
+    """Tests for step (Heaviside) function."""
+
+    def test_basic_functionality(self, backend) -> None:
+        """Verify step function returns 1.0 for x > 0, 0.0 otherwise."""
+        x = np.array([-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0])
+        expected = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_zero_boundary(self, backend) -> None:
+        """Verify step(0) = 0.0 (boundary convention)."""
+        x = np.array([0.0])
+        expected = np.array([0.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_positive_values(self, backend) -> None:
+        """Verify step returns 1.0 for all positive values."""
+        x = np.array([0.001, 0.1, 1.0, 10.0, 100.0])
+        expected = np.ones(5)
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_negative_values(self, backend) -> None:
+        """Verify step returns 0.0 for all negative values."""
+        x = np.array([-100.0, -10.0, -1.0, -0.1, -0.001])
+        expected = np.zeros(5)
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_infinity_handling(self, backend) -> None:
+        """Verify step handles infinity: +inf -> 1.0, -inf -> 0.0."""
+        x = np.array([np.inf, -np.inf])
+        expected = np.array([1.0, 0.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_nan_handling(self, backend) -> None:
+        """Verify step handles NaN: NaN -> 0.0."""
+        x = np.array([np.nan])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+
+        # NaN > 0 is False, so step(NaN) should be 0.0
+        np.testing.assert_array_equal(result, np.array([0.0]))
+
+    def test_mixed_edge_cases(self, backend) -> None:
+        """Verify step handles mixed edge cases correctly."""
+        x = np.array([-np.inf, -1.0, 0.0, 1.0, np.inf, np.nan])
+        expected = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_multidimensional(self, backend) -> None:
+        """Verify step works with multidimensional tensors."""
+        x = np.array([[[1.0, -1.0], [0.0, 2.0]], [[-3.0, 0.5], [0.0, 0.0]]])
+        expected = np.array([[[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [0.0, 0.0]]])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_idempotence(self, backend) -> None:
+        """Verify step(step(x)) = step(x) (idempotent property)."""
+        x = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
+
+        result_once = step(x, backend=backend)
+        result_twice = step(result_once, backend=backend)
+        backend.eval(result_once, result_twice)
+
+        np.testing.assert_array_equal(result_once, result_twice)
+
+    def test_boolean_conversion(self, backend) -> None:
+        """Verify step converts continuous values to discrete boolean."""
+        # Continuous values from sigmoid/tanh
+        x = np.array([0.99, 0.51, 0.49, 0.01, -0.01, -0.49, -0.51, -0.99])
+        expected = np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_empty_tensor(self, backend) -> None:
+        """Verify step works with empty tensors."""
+        x = np.array([])
+        expected = np.array([])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_scalar_tensor(self, backend) -> None:
+        """Verify step works with scalar tensors."""
+        x_positive = np.array(1.0)
+        x_negative = np.array(-1.0)
+        x_zero = np.array(0.0)
+
+        result_positive = step(x_positive, backend=backend)
+        result_negative = step(x_negative, backend=backend)
+        result_zero = step(x_zero, backend=backend)
+        backend.eval(result_positive, result_negative, result_zero)
+
+        np.testing.assert_array_equal(result_positive, 1.0)
+        np.testing.assert_array_equal(result_negative, 0.0)
+        np.testing.assert_array_equal(result_zero, 0.0)
+
+    def test_large_tensors(self, backend) -> None:
+        """Verify step works efficiently with large tensors."""
+        size = 10000
+        x = np.linspace(-100, 100, size)
+        # Expected: 0.0 for x <= 0, 1.0 for x > 0
+        expected = (x > 0).astype(float)
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_numerical_stability_near_zero(self, backend) -> None:
+        """Verify step is numerically stable near zero."""
+        # Very small positive and negative values
+        x = np.array([1e-10, 1e-15, -1e-15, -1e-10])
+        expected = np.array([1.0, 1.0, 0.0, 0.0])
+
+        result = step(x, backend=backend)
+        backend.eval(result)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_broadcasting_compatibility(self, backend) -> None:
+        """Verify step output can broadcast with other operations."""
+        x = np.array([-1.0, 0.0, 1.0, 2.0])
+        a = np.array([1.0, 1.0, 0.0, 0.0])
+
+        # step(x) should be usable in logical operations
+        stepped = step(x, backend=backend)
+        result = logical_and(stepped, a, backend=backend)
+        backend.eval(result)
+
+        # step(x) = [0, 0, 1, 1], AND with [1, 1, 0, 0] = [0, 0, 0, 0]
+        expected = np.array([0.0, 0.0, 0.0, 0.0])
+        np.testing.assert_array_equal(result, expected)

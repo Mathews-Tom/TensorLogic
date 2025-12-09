@@ -136,7 +136,8 @@ class NumpyBackend:
         Maps x > 0 -> 1.0, x <= 0 -> 0.0. Essential for converting continuous
         values to discrete boolean logic.
 
-        NumPy implementation uses np.heaviside with midpoint=0.5 (though x=0 -> 0.0).
+        NumPy implementation uses np.where(x > 0, 1.0, 0.0) to handle edge cases
+        (NaN -> 0.0, since NaN > 0 is False).
 
         Args:
             x: Input tensor
@@ -147,7 +148,7 @@ class NumpyBackend:
         Example:
             >>> s = backend.step([-1.0, 0.0, 1.0])  # [0.0, 0.0, 1.0]
         """
-        return np.heaviside(x, 0.5)
+        return np.where(x > 0, 1.0, 0.0)
 
     def maximum(self, a: Any, b: Any) -> Any:
         """Element-wise maximum (used for logical OR).
