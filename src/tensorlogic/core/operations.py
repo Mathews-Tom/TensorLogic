@@ -1,0 +1,165 @@
+"""Logical operations as tensor primitives.
+
+This module implements fundamental logical operations using tensor operations
+following the mathematical equivalences from Domingos' Tensor Logic paper:
+- Logical AND: a ∧ b = a ⊙ b (Hadamard product)
+- Logical OR: a ∨ b = max(a, b)
+- Logical NOT: ¬a = 1 - a
+
+All operations use the TensorBackend protocol abstraction for backend-agnostic
+implementation across MLX, NumPy, and future backends.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from tensorlogic.backends import TensorBackend
+
+
+def logical_and(a: Any, b: Any, *, backend: TensorBackend) -> Any:
+    """Logical AND via Hadamard product.
+
+    Implements logical conjunction using element-wise multiplication.
+    For boolean tensors (values in {0.0, 1.0}), this correctly implements
+    the AND truth table: 1.0 ∧ 1.0 = 1.0, all other combinations = 0.0.
+
+    Mathematical formulation:
+        a ∧ b = a ⊙ b (element-wise multiply)
+
+    Truth table:
+        | a   | b   | a ∧ b |
+        |-----|-----|-------|
+        | 0.0 | 0.0 | 0.0   |
+        | 0.0 | 1.0 | 0.0   |
+        | 1.0 | 0.0 | 0.0   |
+        | 1.0 | 1.0 | 1.0   |
+
+    Properties:
+        - Commutative: a ∧ b = b ∧ a
+        - Associative: (a ∧ b) ∧ c = a ∧ (b ∧ c)
+        - Idempotent: a ∧ a = a
+        - Identity: a ∧ 1 = a
+        - Annihilator: a ∧ 0 = 0
+
+    Args:
+        a: Boolean tensor (values in {0.0, 1.0})
+        b: Boolean tensor (same shape as a, or broadcastable)
+        backend: Tensor backend for operations
+
+    Returns:
+        Boolean tensor: 1.0 where both inputs are 1.0, 0.0 otherwise
+
+    Raises:
+        ValueError: If shapes are not broadcastable
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+        >>> a = np.array([1.0, 1.0, 0.0, 0.0])
+        >>> b = np.array([1.0, 0.0, 1.0, 0.0])
+        >>> result = logical_and(a, b, backend=backend)
+        >>> result
+        array([1., 0., 0., 0.])
+    """
+    return backend.multiply(a, b)
+
+
+def logical_or(a: Any, b: Any, *, backend: TensorBackend) -> Any:
+    """Logical OR via element-wise maximum.
+
+    Implements logical disjunction using element-wise maximum operation.
+    For boolean tensors (values in {0.0, 1.0}), this correctly implements
+    the OR truth table: max(a, b) = 1.0 if either is 1.0, else 0.0.
+
+    Mathematical formulation:
+        a ∨ b = max(a, b)
+
+    Truth table:
+        | a   | b   | a ∨ b |
+        |-----|-----|-------|
+        | 0.0 | 0.0 | 0.0   |
+        | 0.0 | 1.0 | 1.0   |
+        | 1.0 | 0.0 | 1.0   |
+        | 1.0 | 1.0 | 1.0   |
+
+    Properties:
+        - Commutative: a ∨ b = b ∨ a
+        - Associative: (a ∨ b) ∨ c = a ∨ (b ∨ c)
+        - Idempotent: a ∨ a = a
+        - Identity: a ∨ 0 = a
+        - Annihilator: a ∨ 1 = 1
+
+    Args:
+        a: Boolean tensor (values in {0.0, 1.0})
+        b: Boolean tensor (same shape as a, or broadcastable)
+        backend: Tensor backend for operations
+
+    Returns:
+        Boolean tensor: 1.0 where at least one input is 1.0, 0.0 otherwise
+
+    Raises:
+        ValueError: If shapes are not broadcastable
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+        >>> a = np.array([1.0, 1.0, 0.0, 0.0])
+        >>> b = np.array([1.0, 0.0, 1.0, 0.0])
+        >>> result = logical_or(a, b, backend=backend)
+        >>> result
+        array([1., 1., 1., 0.])
+    """
+    return backend.maximum(a, b)
+
+
+def logical_not(a: Any, *, backend: TensorBackend) -> Any:
+    """Logical NOT via complement.
+
+    Implements logical negation using complement operation (1 - a).
+    For boolean tensors (values in {0.0, 1.0}), this correctly implements
+    the NOT truth table: ¬1.0 = 0.0, ¬0.0 = 1.0.
+
+    Mathematical formulation:
+        ¬a = 1 - a
+
+    Truth table:
+        | a   | ¬a  |
+        |-----|-----|
+        | 0.0 | 1.0 |
+        | 1.0 | 0.0 |
+
+    Properties:
+        - Involution (double negation): ¬¬a = a
+        - Self-dual: ¬(¬a) = a
+        - De Morgan's laws (with AND/OR):
+            ¬(a ∧ b) = ¬a ∨ ¬b
+            ¬(a ∨ b) = ¬a ∧ ¬b
+
+    Args:
+        a: Boolean tensor (values in {0.0, 1.0})
+        backend: Tensor backend for operations
+
+    Returns:
+        Boolean tensor: 1.0 where input is 0.0, 0.0 where input is 1.0
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+        >>> a = np.array([1.0, 0.0, 1.0, 0.0])
+        >>> result = logical_not(a, backend=backend)
+        >>> result
+        array([0., 1., 0., 1.])
+    """
+    ones = backend.ones(())  # Scalar 1.0
+    return backend.subtract(ones, a)
+
+
+__all__ = [
+    "logical_and",
+    "logical_or",
+    "logical_not",
+]
