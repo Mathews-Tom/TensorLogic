@@ -24,4 +24,15 @@ from tensorlogic.backends.protocol import TensorBackend
 from tensorlogic.backends.numpy import NumpyBackend
 from tensorlogic.backends.factory import create_backend, validate_backend
 
-__all__ = ["TensorBackend", "NumpyBackend", "create_backend", "validate_backend"]
+try:
+    from tensorlogic.backends.mlx import MLXBackend
+
+    __all__ = [
+        "TensorBackend",
+        "NumpyBackend",
+        "MLXBackend",
+        "create_backend",
+        "validate_backend",
+    ]
+except ImportError:
+    __all__ = ["TensorBackend", "NumpyBackend", "create_backend", "validate_backend"]
