@@ -136,7 +136,8 @@ class NumpyBackend:
         Maps x > 0 -> 1.0, x <= 0 -> 0.0. Essential for converting continuous
         values to discrete boolean logic.
 
-        NumPy implementation uses np.heaviside with midpoint=0.5 (though x=0 -> 0.0).
+        NumPy implementation uses np.where(x > 0, 1.0, 0.0) to handle edge cases
+        (NaN -> 0.0, since NaN > 0 is False).
 
         Args:
             x: Input tensor
@@ -147,7 +148,7 @@ class NumpyBackend:
         Example:
             >>> s = backend.step([-1.0, 0.0, 1.0])  # [0.0, 0.0, 1.0]
         """
-        return np.heaviside(x, 0.5)
+        return np.where(x > 0, 1.0, 0.0)
 
     def maximum(self, a: Any, b: Any) -> Any:
         """Element-wise maximum (used for logical OR).
@@ -300,6 +301,36 @@ class NumpyBackend:
             >>> a = backend.all(array, axis=0)  # All true per column
         """
         return np.all(array, axis=axis)
+
+    def max(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Maximum reduction (used for soft existential quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take maximum over (None = max all elements)
+
+        Returns:
+            Reduced tensor with maximum values
+
+        Example:
+            >>> m = backend.max(array, axis=1)  # Max over axis 1
+        """
+        return np.max(array, axis=axis)
+
+    def min(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Minimum reduction (used for soft universal quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take minimum over (None = min all elements)
+
+        Returns:
+            Reduced tensor with minimum values
+
+        Example:
+            >>> m = backend.min(array, axis=0)  # Min over axis 0
+        """
+        return np.min(array, axis=axis)
 
     # Differentiation & Evaluation
 

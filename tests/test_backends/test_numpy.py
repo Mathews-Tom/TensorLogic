@@ -128,15 +128,15 @@ class TestLogicalMathOperations:
         """Test step function with mixed positive/negative/zero."""
         x = np.array([-1.0, 0.0, 1.0])
         result = backend.step(x)
-        expected = np.array([0.0, 0.5, 1.0])  # np.heaviside(0, 0.5) = 0.5
+        expected = np.array([0.0, 0.0, 1.0])  # step(x > 0) convention
         np.testing.assert_array_equal(result, expected)
 
     def test_step_zero_boundary(self, backend: NumpyBackend) -> None:
         """Test step function at zero boundary."""
         x = np.array([0.0])
         result = backend.step(x)
-        # np.heaviside(0, 0.5) returns 0.5
-        expected = np.array([0.5])
+        # step(0) = 0.0 (boundary convention: x > 0 required for 1.0)
+        expected = np.array([0.0])
         np.testing.assert_array_equal(result, expected)
 
     def test_maximum(self, backend: NumpyBackend) -> None:

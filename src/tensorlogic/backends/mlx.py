@@ -61,7 +61,9 @@ class MLXBackend:
             >>> C = backend.einsum("ij,jk->ik", A, B)
             >>> backend.eval(C)  # Force execution
         """
-        return mx.einsum(pattern, *tensors)
+        # Convert NumPy arrays to MLX arrays
+        mlx_tensors = tuple(mx.array(t) for t in tensors)
+        return mx.einsum(pattern, *mlx_tensors)
 
     def zeros(self, shape: tuple[int, ...]) -> Any:
         """Create tensor filled with zeros.
@@ -267,6 +269,8 @@ class MLXBackend:
             >>> s = backend.sum(array, axis=1)  # Sum over axis 1
             >>> backend.eval(s)
         """
+        # Convert to MLX array if needed (handles NumPy arrays)
+        array = mx.array(array)
         return mx.sum(array, axis=axis)
 
     def prod(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
@@ -283,6 +287,8 @@ class MLXBackend:
             >>> p = backend.prod(array, axis=0)  # Product over axis 0
             >>> backend.eval(p)
         """
+        # Convert to MLX array if needed (handles NumPy arrays)
+        array = mx.array(array)
         return mx.prod(array, axis=axis)
 
     def any(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
@@ -322,6 +328,42 @@ class MLXBackend:
             >>> backend.eval(a)
         """
         return mx.prod(array != 0, axis=axis) != 0
+
+    def max(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Maximum reduction (used for soft existential quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take maximum over (None = max all elements)
+
+        Returns:
+            Reduced tensor with maximum values (lazy, call eval() to execute)
+
+        Example:
+            >>> m = backend.max(array, axis=1)  # Max over axis 1
+            >>> backend.eval(m)
+        """
+        # Convert to MLX array if needed (handles NumPy arrays)
+        array = mx.array(array)
+        return mx.max(array, axis=axis)
+
+    def min(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Minimum reduction (used for soft universal quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take minimum over (None = min all elements)
+
+        Returns:
+            Reduced tensor with minimum values (lazy, call eval() to execute)
+
+        Example:
+            >>> m = backend.min(array, axis=0)  # Min over axis 0
+            >>> backend.eval(m)
+        """
+        # Convert to MLX array if needed (handles NumPy arrays)
+        array = mx.array(array)
+        return mx.min(array, axis=axis)
 
     # Differentiation & Evaluation
 
