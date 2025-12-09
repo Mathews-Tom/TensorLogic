@@ -11,9 +11,36 @@ from tensorlogic.api.errors import (
     PatternValidationError,
     TensorLogicError,
 )
+from tensorlogic.api.parser import (
+    ASTNode,
+    BinaryOp,
+    ParsedPattern,
+    PatternParser,
+    Predicate,
+    Quantifier,
+    Token,
+    Tokenizer,
+    TokenType,
+    UnaryOp,
+    Variable,
+)
 
 __all__ = [
+    # Errors
     "TensorLogicError",
     "PatternSyntaxError",
     "PatternValidationError",
+    # Parser
+    "PatternParser",
+    "ParsedPattern",
+    "Tokenizer",
+    "Token",
+    "TokenType",
+    # AST Nodes
+    "ASTNode",
+    "Variable",
+    "Predicate",
+    "UnaryOp",
+    "BinaryOp",
+    "Quantifier",
 ]
