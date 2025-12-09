@@ -24,6 +24,7 @@ from tensorlogic.api.parser import (
     UnaryOp,
     Variable,
 )
+from tensorlogic.api.patterns import quantify
 from tensorlogic.api.validation import PatternValidator
 
 __all__ = [
@@ -46,4 +47,6 @@ __all__ = [
     "UnaryOp",
     "BinaryOp",
     "Quantifier",
+    # High-level API
+    "quantify",
 ]
