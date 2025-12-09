@@ -8,5 +8,6 @@ philosophy of minimal abstraction with ~25-30 core operations.
 from __future__ import annotations
 
 from tensorlogic.backends.protocol import TensorBackend
+from tensorlogic.backends.numpy import NumpyBackend
 
-__all__ = ["TensorBackend"]
+__all__ = ["TensorBackend", "NumpyBackend"]
