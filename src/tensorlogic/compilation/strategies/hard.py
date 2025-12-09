@@ -72,11 +72,11 @@ class HardBooleanStrategy:
         self._backend = backend
 
     def compile_and(self, a: Any, b: Any) -> Any:
-        """Compile logical AND using step(a * b).
+        """Compile logical AND using step(a) * step(b).
 
-        Hard AND first multiplies inputs, then applies step function to produce
-        binary output. This implements exact boolean conjunction where both
-        inputs must be "truthy" (> 0 after multiplication).
+        Hard AND binarizes both inputs first, then multiplies to produce
+        binary output. This ensures associativity and implements exact
+        boolean conjunction.
 
         Mathematical Properties:
             - Commutative: AND(a, b) = AND(b, a)
@@ -90,21 +90,23 @@ class HardBooleanStrategy:
             b: Second input tensor (must be broadcastable with a)
 
         Returns:
-            Binary tensor {0, 1} representing hard AND(a, b) = step(a * b)
+            Binary tensor {0, 1} representing hard AND(a, b)
 
         Example:
             >>> result = strategy.compile_and(0.8, 0.9)  # 1.0 (both > 0)
             >>> result = strategy.compile_and([0.5, 0.0], [0.6, 0.8])  # [1.0, 0.0]
         """
-        product = self._backend.multiply(a, b)
-        return self._backend.step(product)
+        # Binarize inputs first to ensure associativity
+        a_bool = self._backend.step(a)
+        b_bool = self._backend.step(b)
+        return self._backend.multiply(a_bool, b_bool)
 
     def compile_or(self, a: Any, b: Any) -> Any:
-        """Compile logical OR using step(a + b).
+        """Compile logical OR using max(step(a), step(b)).
 
-        Hard OR sums inputs, then applies step function to produce binary output.
-        This implements exact boolean disjunction where at least one input must
-        be "truthy" (> 0).
+        Hard OR binarizes both inputs first, then takes maximum to produce
+        binary output. This ensures associativity and implements exact
+        boolean disjunction.
 
         Mathematical Properties:
             - Commutative: OR(a, b) = OR(b, a)
@@ -118,14 +120,16 @@ class HardBooleanStrategy:
             b: Second input tensor (must be broadcastable with a)
 
         Returns:
-            Binary tensor {0, 1} representing hard OR(a, b) = step(a + b)
+            Binary tensor {0, 1} representing hard OR(a, b)
 
         Example:
-            >>> result = strategy.compile_or(0.3, 0.4)  # 1.0 (sum > 0)
+            >>> result = strategy.compile_or(0.3, 0.4)  # 1.0
             >>> result = strategy.compile_or([0.0, 0.5], [0.0, 0.6])  # [0.0, 1.0]
         """
-        sum_result = self._backend.add(a, b)
-        return self._backend.step(sum_result)
+        # Binarize inputs first to ensure associativity
+        a_bool = self._backend.step(a)
+        b_bool = self._backend.step(b)
+        return self._backend.maximum(a_bool, b_bool)
 
     def compile_not(self, a: Any) -> Any:
         """Compile logical NOT using 1 - step(a).
