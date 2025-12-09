@@ -24,6 +24,7 @@ from tensorlogic.api.parser import (
     UnaryOp,
     Variable,
 )
+from tensorlogic.api.validation import PatternValidator
 
 __all__ = [
     # Errors
@@ -36,6 +37,8 @@ __all__ = [
     "Tokenizer",
     "Token",
     "TokenType",
+    # Validation
+    "PatternValidator",
     # AST Nodes
     "ASTNode",
     "Variable",
