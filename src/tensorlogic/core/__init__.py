@@ -29,6 +29,11 @@ from tensorlogic.core.quantifiers import (
     soft_exists,
     soft_forall,
 )
+from tensorlogic.core.composition import (
+    compose_rules,
+    compose_and,
+    compose_or,
+)
 
 __all__ = [
     "logical_and",
@@ -40,4 +45,7 @@ __all__ = [
     "forall",
     "soft_exists",
     "soft_forall",
+    "compose_rules",
+    "compose_and",
+    "compose_or",
 ]

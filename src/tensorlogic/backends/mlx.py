@@ -61,7 +61,9 @@ class MLXBackend:
             >>> C = backend.einsum("ij,jk->ik", A, B)
             >>> backend.eval(C)  # Force execution
         """
-        return mx.einsum(pattern, *tensors)
+        # Convert NumPy arrays to MLX arrays
+        mlx_tensors = tuple(mx.array(t) for t in tensors)
+        return mx.einsum(pattern, *mlx_tensors)
 
     def zeros(self, shape: tuple[int, ...]) -> Any:
         """Create tensor filled with zeros.
