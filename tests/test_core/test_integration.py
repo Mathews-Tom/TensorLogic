@@ -341,33 +341,6 @@ class TestTemperatureControlled:
         deductive_diff = np.abs(deductive_result - soft_result).sum()
         assert analog_diff < deductive_diff
 
-    def test_temperature_gradient_for_learning(self, backend) -> None:
-        """Test that soft temperature operations are differentiable."""
-        # Only test with MLX backend (supports autodiff)
-        if backend.__class__.__name__ != "MLXBackend":
-            pytest.skip("Gradient test only for MLX backend")
-
-        import mlx.core as mx
-
-        a = mx.array([0.6, 0.7])
-        b = mx.array([0.5, 0.8])
-
-        # Create differentiable operation
-        def loss_fn(a_param):
-            op = analogical_operation(logical_and, temperature=1.0, backend=backend)
-            result = op(a_param, b, backend=backend)
-            return backend.sum(result, axis=None)
-
-        # Compute gradient
-        grad_fn = backend.grad(loss_fn)
-        gradients = grad_fn(a)
-        backend.eval(gradients)
-
-        # Verify gradient exists and is finite
-        assert gradients.shape == a.shape
-        grad_np = np.asarray(gradients)
-        assert np.all(np.isfinite(grad_np))
-
     def test_multi_rule_with_temperature(self, backend) -> None:
         """Test complete multi-predicate rule with temperature control.
 
@@ -410,6 +383,43 @@ class TestTemperatureControlled:
         # Result should be closer to 0.72 than 1.0
         analogical_value = float(analogical_result[0, 2])
         assert 0.5 < analogical_value < 1.0  # Between soft and hard
+
+
+class TestMLXGradients:
+    """MLX-specific tests for gradient computation (autodiff).
+
+    These tests verify differentiability of logical operations for neural-symbolic
+    learning. They require MLX backend's automatic differentiation capabilities.
+    """
+
+    def test_temperature_gradient_for_learning(self) -> None:
+        """Test that soft temperature operations are differentiable.
+
+        Verifies that analogical reasoning operations support gradient computation
+        for end-to-end learning in neural-symbolic AI systems.
+        """
+        import mlx.core as mx
+
+        backend = create_backend("mlx")
+
+        a = mx.array([0.6, 0.7])
+        b = mx.array([0.5, 0.8])
+
+        # Create differentiable operation
+        def loss_fn(a_param):
+            op = analogical_operation(logical_and, temperature=1.0, backend=backend)
+            result = op(a_param, b, backend=backend)
+            return backend.sum(result, axis=None)
+
+        # Compute gradient
+        grad_fn = backend.grad(loss_fn)
+        gradients = grad_fn(a)
+        backend.eval(gradients)
+
+        # Verify gradient exists and is finite
+        assert gradients.shape == a.shape
+        grad_np = np.asarray(gradients)
+        assert np.all(np.isfinite(grad_np))
 
 
 class TestPerformance:
