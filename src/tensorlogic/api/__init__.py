@@ -6,6 +6,11 @@ logical operations over tensors.
 
 from __future__ import annotations
 
+from tensorlogic.api.compiler import (
+    CompiledPattern,
+    PatternCompiler,
+    get_global_compiler,
+)
 from tensorlogic.api.errors import (
     PatternSyntaxError,
     PatternValidationError,
@@ -40,6 +45,10 @@ __all__ = [
     "TokenType",
     # Validation
     "PatternValidator",
+    # Compiler
+    "PatternCompiler",
+    "CompiledPattern",
+    "get_global_compiler",
     # AST Nodes
     "ASTNode",
     "Variable",
