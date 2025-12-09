@@ -29,8 +29,9 @@ from tensorlogic.core import (
     logical_not,
     logical_or,
 )
+from tensorlogic.core.temperature import temperature_scaled_operation
 
-__all__ = ["quantify"]
+__all__ = ["quantify", "reason"]
 
 
 class PatternExecutor:
@@ -331,6 +332,231 @@ def quantify(
 
     # Execute pattern
     executor = PatternExecutor(
+        predicates=predicates,
+        bindings=bindings,
+        backend=backend,
+    )
+    result = executor.execute(parsed_pattern.ast)
+
+    # For MLX backend, ensure result is evaluated
+    if hasattr(backend, "eval"):
+        backend.eval(result)
+
+    return result
+
+
+def reason(
+    formula: str,
+    *,
+    predicates: dict[str, Any] | None = None,
+    bindings: dict[str, Any] | None = None,
+    temperature: float = 0.0,
+    aggregator: str = "product",
+    backend: TensorBackend | None = None,
+) -> Any:
+    """Execute reasoning with temperature control.
+
+    Enables interpolation between deductive (T=0) and analogical (T>0) reasoning.
+    Temperature controls the "softness" of logical operations - at T=0, operations
+    are crisp boolean functions; as T increases, operations become soft probabilities.
+
+    Temperature Modes:
+        T=0.0: Purely deductive (hard boolean, no hallucinations)
+            - Operations: AND, OR, NOT use step functions
+            - Results are exact {0, 1} values
+            - No generalization beyond training data
+        T>0.0: Analogical reasoning (soft probabilities)
+            - Operations interpolate between hard and soft
+            - α = 1 - exp(-T) controls interpolation weight
+            - Enables gradual generalization
+        T→∞: Maximum entropy (uniform distribution)
+            - Operations become fully soft/continuous
+            - Maximum generalization capability
+
+    Mathematical Formulation:
+        result = (1-α)·step(op(...)) + α·op(...)
+        where α = 1 - exp(-T)
+
+    Args:
+        formula: Logical formula string
+            Examples: 'P(x) and Q(x)', 'exists y: Related(x, y)'
+        predicates: Named predicates as tensors {'P': tensor, ...}
+            Must be numeric tensors (int/float/bool)
+        bindings: Variable bindings for free variables {'x': tensor, ...}
+            All free variables in formula must be bound
+        temperature: Reasoning temperature (≥0.0, default: 0.0)
+            T=0.0 for deductive, T>0.0 for analogical reasoning
+        aggregator: Aggregation method (default: 'product')
+            - 'product': Łukasiewicz t-norm (strict, conjunctive)
+            - 'sum': Probabilistic sum (permissive)
+            - 'max': Maximum (disjunctive)
+            - 'min': Minimum (conjunctive)
+            Note: Current implementation uses 'product' semantics
+        backend: Tensor backend (defaults to global/MLX if not specified)
+            Use create_backend("mlx") or create_backend("numpy")
+
+    Returns:
+        Result tensor after temperature-controlled reasoning
+            Shape depends on quantifiers and predicates
+
+    Raises:
+        PatternSyntaxError: If formula has invalid syntax
+            Error includes character-level highlighting
+        PatternValidationError: If predicates/bindings validation fails
+            Checks variable binding, predicate availability, shapes, types
+        TensorLogicError: On runtime execution errors
+        ValueError: If temperature is negative
+
+    Examples:
+        >>> import numpy as np
+        >>> from tensorlogic.backends import create_backend
+        >>> backend = create_backend("numpy")
+
+        >>> # Deductive reasoning (T=0) - hard boolean operations
+        >>> result = reason(
+        ...     'P(x) and Q(x)',
+        ...     predicates={
+        ...         'P': np.array([1.0, 0.9, 0.1]),  # 0.9 rounds to 1.0
+        ...         'Q': np.array([1.0, 0.8, 0.9]),  # 0.8 rounds to 1.0
+        ...     },
+        ...     bindings={'x': np.array([0, 1, 2])},
+        ...     temperature=0.0,  # Exact boolean: [1, 1, 0]
+        ...     backend=backend,
+        ... )
+
+        >>> # Analogical reasoning (T=1.0) - soft probabilistic operations
+        >>> result = reason(
+        ...     'Similar(x, y) -> HasProperty(y)',
+        ...     predicates={
+        ...         'Similar': np.array([[0.9, 0.1], [0.1, 0.9]]),
+        ...         'HasProperty': np.array([1.0, 0.7]),
+        ...     },
+        ...     bindings={'x': np.array([0, 1])},
+        ...     temperature=1.0,  # Soft inference with generalization
+        ...     backend=backend,
+        ... )
+
+        >>> # Existential quantification with temperature
+        >>> result = reason(
+        ...     'exists y: Related(x, y) and HasProperty(y)',
+        ...     predicates={
+        ...         'Related': np.array([[0.8, 0.2], [0.3, 0.9]]),
+        ...         'HasProperty': np.array([1.0, 0.6]),
+        ...     },
+        ...     bindings={'x': np.array([0, 1])},
+        ...     temperature=0.5,  # Moderate analogical reasoning
+        ...     backend=backend,
+        ... )
+
+    Notes:
+        - Temperature interpolation: α = 1 - exp(-T)
+          * At T=0, α=0 (100% hard boolean)
+          * At T=1, α≈0.632 (63% soft, 37% hard)
+          * At T≥5, α≈0.993 (99% soft, 1% hard)
+        - All operations (AND, OR, NOT, EXISTS, FORALL) are temperature-scaled
+        - Predicates must be tensors with .shape and .dtype attributes
+        - All operations use the specified backend for execution
+        - MLX backend uses lazy evaluation (results auto-evaluated)
+        - Aggregator parameter reserved for future implementation
+    """
+    # Validate temperature
+    if temperature < 0.0:
+        raise ValueError(f"Temperature must be non-negative, got {temperature}")
+
+    # Validate aggregator (currently unused, but validate for API consistency)
+    valid_aggregators = {"product", "sum", "max", "min"}
+    if aggregator not in valid_aggregators:
+        raise ValueError(
+            f"Invalid aggregator '{aggregator}'. Must be one of: {', '.join(sorted(valid_aggregators))}"
+        )
+
+    # Normalize inputs
+    predicates = predicates or {}
+    bindings = bindings or {}
+
+    # Get or create backend
+    if backend is None:
+        backend = create_backend()
+
+    # Wrap logical operations with temperature scaling
+    temp_and = temperature_scaled_operation(logical_and, temperature, backend=backend)
+    temp_or = temperature_scaled_operation(logical_or, temperature, backend=backend)
+    temp_not = temperature_scaled_operation(logical_not, temperature, backend=backend)
+    temp_implies = temperature_scaled_operation(logical_implies, temperature, backend=backend)
+    temp_exists = temperature_scaled_operation(exists, temperature, backend=backend)
+    temp_forall = temperature_scaled_operation(forall, temperature, backend=backend)
+
+    # Parse pattern
+    parser = PatternParser()
+    parsed_pattern: ParsedPattern = parser.parse(formula)
+
+    # Validate pattern
+    validator = PatternValidator()
+    validator.validate(parsed_pattern, predicates=predicates, bindings=bindings)
+
+    # Create temperature-controlled executor
+    # We need a modified executor that uses temperature-scaled operations
+    class TemperatureControlledExecutor(PatternExecutor):
+        """Executor that uses temperature-scaled operations."""
+
+        def _execute_unary_op(self, node: UnaryOp) -> Any:
+            """Execute unary operator with temperature control."""
+            operand_result = self.execute(node.operand)
+
+            if node.operator == "not":
+                return temp_not(operand_result, backend=self.backend)
+            else:
+                raise TensorLogicError(
+                    f"Unknown unary operator: {node.operator}",
+                    suggestion="Supported operators: not",
+                )
+
+        def _execute_binary_op(self, node: BinaryOp) -> Any:
+            """Execute binary operator with temperature control."""
+            left_result = self.execute(node.left)
+            right_result = self.execute(node.right)
+
+            if node.operator == "and":
+                return temp_and(left_result, right_result, backend=self.backend)
+            elif node.operator == "or":
+                return temp_or(left_result, right_result, backend=self.backend)
+            elif node.operator == "->":
+                return temp_implies(left_result, right_result, backend=self.backend)
+            else:
+                raise TensorLogicError(
+                    f"Unknown binary operator: {node.operator}",
+                    suggestion="Supported operators: and, or, ->",
+                )
+
+        def _execute_quantifier(self, node: Quantifier) -> Any:
+            """Execute quantifier with temperature control."""
+            # Add quantified variables to scope
+            old_quantified_vars = self.quantified_vars.copy()
+            for var in node.variables:
+                self.quantified_vars.add(var)
+
+            try:
+                # Execute the body with quantified variables in scope
+                body_result = self.execute(node.body)
+
+                # Determine which axis to quantify over
+                axis = 0
+
+                if node.quantifier == "exists":
+                    return temp_exists(body_result, axis=axis, backend=self.backend)
+                elif node.quantifier == "forall":
+                    return temp_forall(body_result, axis=axis, backend=self.backend)
+                else:
+                    raise TensorLogicError(
+                        f"Unknown quantifier: {node.quantifier}",
+                        suggestion="Supported quantifiers: exists, forall",
+                    )
+            finally:
+                # Restore previous quantified variables scope
+                self.quantified_vars = old_quantified_vars
+
+    # Execute pattern with temperature-controlled operations
+    executor = TemperatureControlledExecutor(
         predicates=predicates,
         bindings=bindings,
         backend=backend,
