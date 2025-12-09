@@ -34,6 +34,11 @@ from tensorlogic.core.composition import (
     compose_and,
     compose_or,
 )
+from tensorlogic.core.temperature import (
+    temperature_scaled_operation,
+    deductive_operation,
+    analogical_operation,
+)
 
 __all__ = [
     "logical_and",
@@ -48,4 +53,7 @@ __all__ = [
     "compose_rules",
     "compose_and",
     "compose_or",
+    "temperature_scaled_operation",
+    "deductive_operation",
+    "analogical_operation",
 ]
