@@ -302,6 +302,36 @@ class NumpyBackend:
         """
         return np.all(array, axis=axis)
 
+    def max(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Maximum reduction (used for soft existential quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take maximum over (None = max all elements)
+
+        Returns:
+            Reduced tensor with maximum values
+
+        Example:
+            >>> m = backend.max(array, axis=1)  # Max over axis 1
+        """
+        return np.max(array, axis=axis)
+
+    def min(self, array: Any, axis: int | tuple[int, ...] | None = None) -> Any:
+        """Minimum reduction (used for soft universal quantification).
+
+        Args:
+            array: Input tensor
+            axis: Axis or axes to take minimum over (None = min all elements)
+
+        Returns:
+            Reduced tensor with minimum values
+
+        Example:
+            >>> m = backend.min(array, axis=0)  # Min over axis 0
+        """
+        return np.min(array, axis=axis)
+
     # Differentiation & Evaluation
 
     def grad(self, fn: Callable[..., Any]) -> Callable[..., Any]:

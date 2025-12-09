@@ -7,6 +7,8 @@ are mapped to tensor operations:
 - OR: Element-wise maximum
 - NOT: Complement (1 - a)
 - IMPLIES: max(1-a, b)
+- EXISTS: Summation + step (hard) or maximum (soft)
+- FORALL: Product + step (hard) or minimum (soft)
 
 All operations use the TensorBackend protocol for backend abstraction,
 supporting MLX (primary) and NumPy (fallback) implementations.
@@ -16,12 +18,26 @@ from __future__ import annotations
 
 from tensorlogic.core.operations import (
     logical_and,
+    logical_implies,
     logical_not,
     logical_or,
+    step,
+)
+from tensorlogic.core.quantifiers import (
+    exists,
+    forall,
+    soft_exists,
+    soft_forall,
 )
 
 __all__ = [
     "logical_and",
     "logical_or",
     "logical_not",
+    "logical_implies",
+    "step",
+    "exists",
+    "forall",
+    "soft_exists",
+    "soft_forall",
 ]
