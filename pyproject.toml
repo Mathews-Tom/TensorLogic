@@ -1,5 +1,9 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "tensorlogic"
+name = "python-tensorlogic"
 version = "0.1.0"
 description = "Neural-symbolic AI framework unifying logical reasoning and tensor computation"
 readme = "README.md"
@@ -23,6 +27,13 @@ dependencies = [
     "numpy>=1.24.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Mathews-Tom/TensorLogic"
+Documentation = "https://github.com/Mathews-Tom/TensorLogic#readme"
+Repository = "https://github.com/Mathews-Tom/TensorLogic.git"
+Issues = "https://github.com/Mathews-Tom/TensorLogic/issues"
+Changelog = "https://github.com/Mathews-Tom/TensorLogic/releases"
+
 [project.optional-dependencies]
 mlx = [
     "mlx>=0.30.0",
@@ -33,9 +44,23 @@ all = [
 
 [dependency-groups]
 dev = [
+    "build>=1.3.0",
+    "hatchling>=1.28.0",
     "hypothesis>=6.148.7",
     "mypy>=1.19.0",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.8",
+    "twine>=6.2.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tensorlogic"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/LICENSE",
+    "/README.md",
 ]
