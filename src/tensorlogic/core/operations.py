@@ -156,8 +156,8 @@ def logical_not(a: Any, *, backend: TensorBackend) -> Any:
         >>> result
         array([0., 1., 0., 1.])
     """
-    ones = backend.ones(())  # Scalar 1.0
-    return backend.subtract(ones, a)
+    # Use Python scalar 1 directly - backends handle scalar broadcasting efficiently
+    return backend.subtract(1, a)
 
 
 def logical_implies(a: Any, b: Any, *, backend: TensorBackend) -> Any:
