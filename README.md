@@ -114,6 +114,35 @@ All backends implement the `TensorBackend` Protocol with these operations:
 - `astype(tensor, dtype)` - Type conversion
 - `asarray(data)` - Convert to tensor
 
+## Examples
+
+TensorLogic includes practical examples demonstrating neural-symbolic reasoning:
+
+### Compilation Strategies
+
+```bash
+uv run python examples/compilation_strategies.py
+```
+
+Compare soft, hard, Godel, product, and Lukasiewicz semantics for logical operations.
+
+### Knowledge Graph Reasoning
+
+```bash
+uv run python examples/knowledge_graph_reasoning.py
+```
+
+Comprehensive example demonstrating:
+- Family knowledge graph with 8 entities
+- Logical operations (AND, OR, NOT, IMPLIES)
+- Relation inference (Grandparent, Aunt/Uncle rules)
+- Quantified queries (EXISTS, FORALL)
+- Temperature-controlled reasoning (deductive vs analogical)
+- Compilation strategy comparison
+- Uncertain knowledge handling
+
+See [`examples/README.md`](examples/README.md) for detailed documentation.
+
 ## Development
 
 ### Running Tests
@@ -171,6 +200,7 @@ uv run ruff format .
 
 ## Documentation
 
+- **Examples**: [`examples/README.md`](examples/README.md) (practical usage examples)
 - **Backend API**: `docs/backends/API.md` (comprehensive API reference)
 - **Architecture**: `.sage/agent/system/architecture.md`
 - **Tech Stack**: `.sage/agent/system/tech-stack.md`
