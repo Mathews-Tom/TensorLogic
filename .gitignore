@@ -213,3 +213,5 @@ __marimo__/
 # Developer workspace (Sage-Dev generated files)
 .docs/
 .sage/
+
+.approval_tests_temp
