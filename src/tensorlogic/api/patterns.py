@@ -1,7 +1,7 @@
 """High-level pattern execution API for tensor logic operations.
 
 Implements the quantify() function for executing logical formulas with
-quantifiers, integrating parsing, validation, and CoreLogic execution.
+quantifiers, integrating parsing, validation, and compilation strategies.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from tensorlogic.api.parser import (
 )
 from tensorlogic.api.validation import PatternValidator
 from tensorlogic.backends import TensorBackend, create_backend
+from tensorlogic.compilation import CompilationStrategy, create_strategy
 from tensorlogic.core import (
     exists,
     forall,
@@ -35,24 +36,27 @@ __all__ = ["quantify", "reason"]
 
 
 class PatternExecutor:
-    """Executes parsed patterns by traversing AST and applying CoreLogic operations."""
+    """Executes parsed patterns by traversing AST and applying compilation strategy operations."""
 
     def __init__(
         self,
         predicates: dict[str, Any],
         bindings: dict[str, Any],
         backend: TensorBackend,
+        strategy: CompilationStrategy,
     ) -> None:
-        """Initialize executor with predicates, bindings, and backend.
+        """Initialize executor with predicates, bindings, backend, and strategy.
 
         Args:
             predicates: Named predicate tensors
             bindings: Variable bindings
             backend: Tensor backend for operations
+            strategy: Compilation strategy for logical operations
         """
         self.predicates = predicates
         self.bindings = bindings
         self.backend = backend
+        self.strategy = strategy
         self.quantified_vars: set[str] = set()  # Track quantified variables
 
     def execute(self, node: ASTNode) -> Any:
@@ -154,7 +158,7 @@ class PatternExecutor:
         operand_result = self.execute(node.operand)
 
         if node.operator == "not":
-            return logical_not(operand_result, backend=self.backend)
+            return self.strategy.compile_not(operand_result)
         else:
             raise TensorLogicError(
                 f"Unknown unary operator: {node.operator}",
@@ -177,11 +181,11 @@ class PatternExecutor:
         right_result = self.execute(node.right)
 
         if node.operator == "and":
-            return logical_and(left_result, right_result, backend=self.backend)
+            return self.strategy.compile_and(left_result, right_result)
         elif node.operator == "or":
-            return logical_or(left_result, right_result, backend=self.backend)
+            return self.strategy.compile_or(left_result, right_result)
         elif node.operator == "->":
-            return logical_implies(left_result, right_result, backend=self.backend)
+            return self.strategy.compile_implies(left_result, right_result)
         else:
             raise TensorLogicError(
                 f"Unknown binary operator: {node.operator}",
@@ -214,9 +218,9 @@ class PatternExecutor:
             axis = 0
 
             if node.quantifier == "exists":
-                return exists(body_result, axis=axis, backend=self.backend)
+                return self.strategy.compile_exists(body_result, axis=axis)
             elif node.quantifier == "forall":
-                return forall(body_result, axis=axis, backend=self.backend)
+                return self.strategy.compile_forall(body_result, axis=axis)
             else:
                 raise TensorLogicError(
                     f"Unknown quantifier: {node.quantifier}",
@@ -233,6 +237,7 @@ def quantify(
     predicates: dict[str, Any] | None = None,
     bindings: dict[str, Any] | None = None,
     domain: dict[str, range | list[Any]] | None = None,
+    strategy: str | CompilationStrategy = "soft_differentiable",
     backend: TensorBackend | None = None,
 ) -> Any:
     """Execute quantified logical pattern.
@@ -250,6 +255,10 @@ def quantify(
             All free variables in pattern must be bound
         domain: Quantification domains {'x': range(100), ...}
             (Not yet implemented - reserved for future use)
+        strategy: Compilation strategy for logical operations (default: "soft_differentiable")
+            Can be a strategy name string or CompilationStrategy instance
+            Available strategies: "soft_differentiable", "hard_boolean", "godel",
+            "product", "lukasiewicz"
         backend: Tensor backend (defaults to global/MLX if not specified)
             Use create_backend("mlx") or create_backend("numpy")
 
@@ -322,6 +331,14 @@ def quantify(
     if backend is None:
         backend = create_backend()
 
+    # Resolve strategy
+    if isinstance(strategy, str):
+        # String name - resolve via factory
+        strategy_instance = create_strategy(strategy, backend=backend)
+    else:
+        # Direct strategy instance
+        strategy_instance = strategy
+
     # Parse pattern
     parser = PatternParser()
     parsed_pattern: ParsedPattern = parser.parse(pattern)
@@ -335,6 +352,7 @@ def quantify(
         predicates=predicates,
         bindings=bindings,
         backend=backend,
+        strategy=strategy_instance,
     )
     result = executor.execute(parsed_pattern.ast)
 
@@ -556,10 +574,14 @@ def reason(
                 self.quantified_vars = old_quantified_vars
 
     # Execute pattern with temperature-controlled operations
+    # Note: TemperatureControlledExecutor overrides all strategy methods,
+    # so we pass a default strategy just to satisfy the signature
+    default_strategy = create_strategy("soft_differentiable", backend=backend)
     executor = TemperatureControlledExecutor(
         predicates=predicates,
         bindings=bindings,
         backend=backend,
+        strategy=default_strategy,
     )
     result = executor.execute(parsed_pattern.ast)
 
