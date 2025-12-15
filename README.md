@@ -39,10 +39,10 @@ This capability is theoretically grounded in Pedro Domingos' Tensor Logic paper 
 
 ```bash
 # Basic Installation (NumPy backend)
-uv add tensorlogic
+uv add python-tensorlogic
 
 # Recommended (MLX backend for Apple Silicon)
-uv add tensorlogic mlx>=0.30.0
+uv add python-tensorlogic mlx>=0.30.0
 ```
 
 ### Performance Architecture
