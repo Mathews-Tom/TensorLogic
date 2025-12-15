@@ -2,35 +2,167 @@
 
 Neural-symbolic AI framework unifying logical reasoning and tensor computation. Bridge neural networks and symbolic reasoning through tensor operations based on Pedro Domingos' Tensor Logic paper (arXiv:2510.12269).
 
+**Core Insight:** Logical operations map directly to tensor operations:
+- Logical AND → Hadamard product
+- Logical OR → Maximum operation
+- Implications → `max(1-a, b)`
+- Quantifiers → Einsum summation with Heaviside step
+
 ## Quick Start
 
 ### Installation
 
-**Basic Installation (NumPy backend):**
 ```bash
+# Basic Installation (NumPy backend)
 uv add tensorlogic
-```
 
-**Recommended (MLX backend for Apple Silicon):**
-```bash
+# Recommended (MLX backend for Apple Silicon)
 uv add tensorlogic mlx>=0.30.0
 ```
 
-### Basic Usage
+### Logical Reasoning in Tensors
 
 ```python
+from tensorlogic.core import logical_and, logical_or, logical_not, logical_implies
+from tensorlogic.core.quantifiers import exists, forall
 from tensorlogic.backends import create_backend
 
-# Default: try MLX, fallback to NumPy
 backend = create_backend()
 
-# Create tensors
-x = backend.zeros((2, 3))
-y = backend.ones((2, 3))
+# Define relations as tensors (family knowledge graph)
+# Rows = subject, Columns = object
+parent = backend.asarray([
+    [0., 1., 1., 0.],  # Alice is parent of Bob, Carol
+    [0., 0., 0., 1.],  # Bob is parent of David
+    [0., 0., 0., 0.],  # Carol has no children
+    [0., 0., 0., 0.],  # David has no children
+])
 
-# Tensor operations
-result = backend.einsum('ij,ij->ij', x, y)
-backend.eval(result)  # Force evaluation (critical for MLX)
+# Infer grandparent: exists y: Parent(x,y) AND Parent(y,z)
+# Using einsum: sum over intermediate variable y
+composition = backend.einsum('xy,yz->xz', parent, parent)
+grandparent = backend.step(composition)  # Alice is grandparent of David
+
+# Quantified query: "Does Alice have any children?"
+has_children = exists(parent[0, :], backend=backend)  # True
+
+# Logical implication: Parent(x,y) -> Ancestor(x,y)
+ancestor = logical_implies(parent, parent, backend=backend)
+```
+
+## Knowledge Graph Reasoning
+
+TensorLogic's flagship capability: neural-symbolic reasoning over knowledge graphs with temperature-controlled inference.
+
+```python
+from tensorlogic.api import quantify, reason
+
+# Pattern-based quantified queries
+result = quantify(
+    'exists y: Parent(x, y) and Parent(y, z)',
+    predicates={'Parent': parent_tensor},
+    backend=backend
+)
+
+# Temperature-controlled reasoning
+# T=0: Pure deductive (no hallucinations)
+# T>0: Analogical reasoning (generalization)
+inference = reason(
+    'Grandparent(x, z)',
+    bindings={'x': alice_idx, 'z': david_idx},
+    temperature=0.0,  # Strict deductive mode
+    backend=backend
+)
+```
+
+### Comprehensive Example
+
+Run the full knowledge graph reasoning example:
+
+```bash
+uv run python examples/knowledge_graph_reasoning.py
+```
+
+**Demonstrates:**
+- Family knowledge graph with 8 entities and 4 relation types
+- Logical operations: AND, OR, NOT, IMPLIES
+- Relation inference: Grandparent, Aunt/Uncle rules via implication
+- Quantified queries: EXISTS ("has children?"), FORALL ("loves all?")
+- Temperature control: T=0 deductive vs T>0 analogical reasoning
+- Compilation strategy comparison across 5 semantic modes
+- Uncertain knowledge handling with fuzzy relations
+
+See [`examples/README.md`](examples/README.md) for detailed documentation.
+
+## Compilation Strategies
+
+TensorLogic supports multiple semantic interpretations:
+
+| Strategy | Use Case | Differentiable |
+|----------|----------|----------------|
+| `soft_differentiable` | Neural network training | Yes |
+| `hard_boolean` | Exact logical inference | No |
+| `godel` | Fuzzy logic (min/max) | Yes |
+| `product` | Probabilistic reasoning | Yes |
+| `lukasiewicz` | Bounded arithmetic logic | Yes |
+
+```python
+from tensorlogic.compilation import create_strategy
+
+# Choose semantics based on use case
+strategy = create_strategy("soft_differentiable")  # Training
+strategy = create_strategy("hard_boolean")         # Inference
+
+# Compile logical operations
+result = strategy.compile_and(a, b)
+result = strategy.compile_implies(premise, conclusion)
+```
+
+## API Reference
+
+### Core Operations
+
+```python
+from tensorlogic.core import logical_and, logical_or, logical_not, logical_implies
+
+# Element-wise logical operations on tensors
+result = logical_and(a, b, backend=backend)      # a AND b
+result = logical_or(a, b, backend=backend)       # a OR b
+result = logical_not(a, backend=backend)         # NOT a
+result = logical_implies(a, b, backend=backend)  # a -> b
+```
+
+### Quantifiers
+
+```python
+from tensorlogic.core.quantifiers import exists, forall
+
+# Existential: "exists x such that P(x)"
+result = exists(predicate, axis=0, backend=backend)
+
+# Universal: "for all x, P(x)"
+result = forall(predicate, axis=0, backend=backend)
+```
+
+### High-Level Pattern API
+
+```python
+from tensorlogic.api import quantify, reason
+
+# Pattern-based quantified queries
+result = quantify(
+    'forall x: P(x) -> Q(x)',
+    predicates={'P': predicate_p, 'Q': predicate_q},
+    backend=backend
+)
+
+# Temperature-controlled reasoning
+result = reason(
+    'exists y: Related(x, y) and HasProperty(y)',
+    bindings={'x': entity_batch},
+    temperature=0.0,  # 0.0 = deductive, >0 = analogical
+    backend=backend
+)
 ```
 
 ## Backend System
@@ -48,10 +180,8 @@ from tensorlogic.backends import create_backend
 # Automatic selection (MLX → NumPy fallback)
 backend = create_backend()
 
-# Explicit NumPy backend
+# Explicit backend selection
 numpy_backend = create_backend("numpy")
-
-# Explicit MLX backend (raises if unavailable)
 mlx_backend = create_backend("mlx")
 ```
 
@@ -62,86 +192,46 @@ MLX uses lazy evaluation - operations are not computed until explicitly evaluate
 ```python
 backend = create_backend("mlx")
 
-# These operations are lazy - not computed yet
+# Operations are lazy - not computed yet
 a = backend.ones((100, 100))
-b = backend.zeros((100, 100))
-result = backend.einsum('ij,jk->ik', a, b)
+result = backend.einsum('ij,jk->ik', a, a)
 
 # Force evaluation
 backend.eval(result)  # Now computed
 ```
 
-### Backend Protocol
+### Backend Protocol Operations
 
-All backends implement the `TensorBackend` Protocol with these operations:
+All backends implement the `TensorBackend` Protocol:
 
-**Creation:**
-- `zeros(shape)` - Zero-filled tensor
-- `ones(shape)` - One-filled tensor
-- `arange(start, stop)` - Sequential values
-- `full(shape, fill_value)` - Constant-filled tensor
+**Creation:** `zeros`, `ones`, `arange`, `full`, `asarray`
 
-**Transformation:**
-- `reshape(tensor, shape)` - Change tensor shape
-- `broadcast_to(tensor, shape)` - Broadcast to shape
-- `transpose(tensor, axes)` - Permute axes
-- `squeeze(tensor, axis)` - Remove size-1 dimensions
-- `expand_dims(tensor, axis)` - Add size-1 dimension
+**Transformation:** `reshape`, `broadcast_to`, `transpose`, `squeeze`, `expand_dims`
 
-**Operations:**
-- `einsum(pattern, *tensors)` - Einstein summation
-- `maximum(a, b)` - Element-wise maximum
-- `add(a, b)` - Element-wise addition
-- `subtract(a, b)` - Element-wise subtraction
-- `multiply(a, b)` - Element-wise multiplication
-- `divide(a, b)` - Element-wise division
-- `matmul(a, b)` - Matrix multiplication
-- `sum(tensor, axis, keepdims)` - Sum reduction
-- `max(tensor, axis, keepdims)` - Max reduction
-- `min(tensor, axis, keepdims)` - Min reduction
-- `mean(tensor, axis, keepdims)` - Mean reduction
-- `prod(tensor, axis, keepdims)` - Product reduction
+**Operations:** `einsum`, `maximum`, `add`, `subtract`, `multiply`, `divide`, `matmul`
 
-**Utilities:**
-- `eval(*tensors)` - Force evaluation (MLX lazy execution)
-- `step(x)` - Heaviside step function
-- `clip(tensor, min, max)` - Clamp values
-- `abs(tensor)` - Absolute value
-- `exp(tensor)` - Exponential
-- `log(tensor)` - Natural logarithm
-- `sqrt(tensor)` - Square root
-- `power(tensor, exponent)` - Power operation
-- `astype(tensor, dtype)` - Type conversion
-- `asarray(data)` - Convert to tensor
+**Reductions:** `sum`, `max`, `min`, `mean`, `prod`
 
-## Examples
+**Utilities:** `eval`, `step`, `clip`, `abs`, `exp`, `log`, `sqrt`, `power`, `astype`
 
-TensorLogic includes practical examples demonstrating neural-symbolic reasoning:
+See [`docs/backends/API.md`](docs/backends/API.md) for complete API reference.
 
-### Compilation Strategies
+## Project Status
 
-```bash
-uv run python examples/compilation_strategies.py
-```
+**Current Phase:** Core Framework Complete (97%)
 
-Compare soft, hard, Godel, product, and Lukasiewicz semantics for logical operations.
+**Completed:**
+- BACKEND-001: TensorBackend Protocol with MLX + NumPy (PR #6)
+- CORE-001: Logical Operations & Quantifiers (PR #7)
+- API-001: Pattern Language & Compilation (PR #8)
+- 817 tests, 99.76% pass rate, 100% type coverage
 
-### Knowledge Graph Reasoning
+**Next Phase:** Advanced Applications
+- COMP-001: Compilation Strategy Optimization
+- VERIF-001: Lean 4 Verification Bridge
+- RAG Integration: Scalable symbolic-aware retrieval
 
-```bash
-uv run python examples/knowledge_graph_reasoning.py
-```
-
-Comprehensive example demonstrating:
-- Family knowledge graph with 8 entities
-- Logical operations (AND, OR, NOT, IMPLIES)
-- Relation inference (Grandparent, Aunt/Uncle rules)
-- Quantified queries (EXISTS, FORALL)
-- Temperature-controlled reasoning (deductive vs analogical)
-- Compilation strategy comparison
-- Uncertain knowledge handling
-
-See [`examples/README.md`](examples/README.md) for detailed documentation.
+See [`docs/research/rag-goals.md`](docs/research/rag-goals.md) for research roadmap.
 
 ## Development
 
@@ -149,62 +239,38 @@ See [`examples/README.md`](examples/README.md) for detailed documentation.
 
 ```bash
 # All tests
-uv run pytest tests/test_backends/
+uv run pytest
 
 # With coverage
-uv run pytest tests/test_backends/ --cov=tensorlogic.backends --cov-report=html
+uv run pytest --cov=tensorlogic --cov-report=html
 
-# Single test file
-uv run pytest tests/test_backends/test_mlx.py
-
-# Specific test
-uv run pytest tests/test_backends/test_mlx.py::test_einsum_matrix_multiply
+# Specific component
+uv run pytest tests/test_core/
+uv run pytest tests/test_backends/
+uv run pytest tests/test_api/
 ```
 
 ### Type Checking
 
 ```bash
-# Strict type checking
-uv run mypy --strict src/tensorlogic/backends/
-
+uv run mypy --strict src/tensorlogic/
 # Current status: 0 errors
 ```
 
 ### Code Quality
 
 ```bash
-# Linting
-uv run ruff check .
-
-# Formatting
-uv run ruff format .
+uv run ruff check .   # Linting
+uv run ruff format .  # Formatting
 ```
-
-## Project Status
-
-**Current Phase:** Backend Implementation Complete
-
-**Completed:**
-- TensorBackend Protocol definition
-- NumPy backend implementation (100% coverage)
-- MLX backend implementation (100% coverage)
-- Factory pattern with validation
-- Cross-backend validation tests
-- Performance benchmarks
-- Production readiness (99% coverage, 0 mypy errors)
-
-**Next Phase:** Core Logic Implementation (CORE-001)
-- Logical operations (AND, OR, NOT, IMPLIES)
-- Quantifiers (EXISTS, FORALL)
-- Temperature-controlled reasoning
 
 ## Documentation
 
-- **Examples**: [`examples/README.md`](examples/README.md) (practical usage examples)
-- **Backend API**: `docs/backends/API.md` (comprehensive API reference)
-- **Architecture**: `.sage/agent/system/architecture.md`
-- **Tech Stack**: `.sage/agent/system/tech-stack.md`
-- **Original Paper**: arXiv:2510.12269 (Domingos, 2025)
+- **Conceptual Guide:** [`docs/concepts/tensor-logic-mapping.md`](docs/concepts/tensor-logic-mapping.md) - How logic becomes tensors
+- **Examples:** [`examples/README.md`](examples/README.md) - Practical usage examples
+- **Backend API:** [`docs/backends/API.md`](docs/backends/API.md) - Comprehensive API reference
+- **Research Goals:** [`docs/research/rag-goals.md`](docs/research/rag-goals.md) - RAG research roadmap
+- **Original Paper:** arXiv:2510.12269 (Domingos, 2025)
 
 ## License
 
