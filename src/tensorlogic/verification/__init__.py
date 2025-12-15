@@ -55,12 +55,28 @@ from tensorlogic.verification.lean_bridge import (
     LeanProjectError,
 )
 from tensorlogic.verification.results import VerificationResult
+from tensorlogic.verification.theorems import (
+    PROVEN_THEOREMS,
+    ProvenTheorem,
+    BuildResult,
+    get_theorem,
+    list_theorems_by_category,
+    verify_build,
+)
 
 __all__ = [
+    # Lean bridge
     "LeanBridge",
     "LeanNotInstalledError",
     "LeanProjectError",
     "VerificationResult",
+    # Proven theorems
+    "PROVEN_THEOREMS",
+    "ProvenTheorem",
+    "BuildResult",
+    "get_theorem",
+    "list_theorems_by_category",
+    "verify_build",
 ]
 
 __version__ = "0.1.0"

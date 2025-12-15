@@ -1,15 +1,11 @@
 import Lake
 open Lake DSL
 
-package «tensorlogic» {
+package «tensorlogic» where
   -- Lean 4 project configuration for TensorLogic verification
-}
-
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
+  -- Using standard library only (no mathlib dependency)
 
 @[default_target]
-lean_lib «TensorLogic» {
+lean_lib «TensorLogic» where
   -- Main TensorLogic theorem library
   roots := #[`TensorLogic]
-}
