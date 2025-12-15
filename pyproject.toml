@@ -38,11 +38,21 @@ Changelog = "https://github.com/Mathews-Tom/TensorLogic/releases"
 mlx = [
     "mlx>=0.30.0",
 ]
+cuda = [
+    "cupy-cuda12x>=13.0.0",
+]
+cuda11 = [
+    "cupy-cuda11x>=13.0.0",
+]
 sparse = [
     "scipy>=1.11.0",
 ]
 all = [
     "mlx>=0.30.0",
+    "scipy>=1.11.0",
+]
+colab = [
+    "cupy-cuda11x>=13.0.0",
     "scipy>=1.11.0",
 ]
 
