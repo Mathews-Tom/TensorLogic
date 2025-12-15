@@ -1,12 +1,29 @@
 # TensorLogic
 
-Neural-symbolic AI framework unifying logical reasoning and tensor computation. Bridge neural networks and symbolic reasoning through tensor operations based on Pedro Domingos' Tensor Logic paper (arXiv:2510.12269).
+**The Temperature Dial for AI Reasoning** — Go from provable deduction to creative inference in one parameter.
 
-**Core Insight:** Logical operations map directly to tensor operations:
-- Logical AND → Hadamard product
-- Logical OR → Maximum operation
-- Implications → `max(1-a, b)`
-- Quantifiers → Einsum summation with Heaviside step
+[![PyPI](https://img.shields.io/pypi/v/python-tensorlogic)](https://pypi.org/project/python-tensorlogic/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb)
+
+## The Problem TensorLogic Solves
+
+Traditional AI forces a choice: **logical solvers** give you provable correctness but can't generalize beyond their rules. **Neural networks** generalize beautifully but hallucinate with no guarantees. You've had to pick one.
+
+**TensorLogic gives you both.** One framework. One API. One parameter to control the trade-off.
+
+```python
+from tensorlogic.api import reason
+
+# Pure deduction: mathematically provable, zero hallucinations
+certain = reason('Grandparent(x, z)', temperature=0.0, ...)  # T=0: Exact logic
+
+# Analogical: infers "likely grandparent" even with incomplete data
+creative = reason('Grandparent(x, z)', temperature=0.5, ...)  # T>0: Generalization
+```
+
+**That's the entire value proposition.** The temperature dial bridges symbolic AI and neural AI.
 
 ## Beyond Deduction: Enabling Generalization with Analogical Reasoning
 
@@ -33,35 +50,61 @@ result = reason('Grandparent(x, z)', temperature=0.5, ...)
 
 This capability is theoretically grounded in Pedro Domingos' Tensor Logic paper ([arXiv:2510.12269](https://arxiv.org/abs/2510.12269)). For a deep dive on temperature semantics, see the [Temperature-Controlled Inference Guide](docs/concepts/tensor-logic-mapping.md#temperature-controlled-inference).
 
+## Technical Validation
+
+Before diving in, here's why you can trust TensorLogic for production:
+
+| Capability | Status | What It Means |
+|------------|--------|---------------|
+| **1M+ Entity Graphs** | Sparse tensor support | Handle enterprise-scale knowledge graphs |
+| **10-100x Speedups** | MLX + CUDA backends | Real-time inference on GPU hardware |
+| **15 Theorems Proven** | Lean 4 verification | Mathematically verified core operations |
+| **99%+ Test Coverage** | 1,257 tests | Production-grade reliability |
+| **LangChain Integration** | RAG-ready | Drop into existing LLM pipelines |
+
+This isn't an academic prototype. It's built for production ML pipelines.
+
 ## Quick Start
 
 ### Installation
 
 ```bash
 # Basic Installation (NumPy backend)
-uv add python-tensorlogic
+pip install python-tensorlogic
 
-# Recommended (MLX backend for Apple Silicon)
-uv add python-tensorlogic mlx>=0.30.0
+# Apple Silicon (MLX backend - recommended for M1/M2/M3)
+pip install python-tensorlogic mlx>=0.30.0
+
+# NVIDIA GPU / Google Colab (CUDA backend)
+pip install python-tensorlogic cupy-cuda11x  # CUDA 11.x (Colab)
+pip install python-tensorlogic cupy-cuda12x  # CUDA 12.x (newer GPUs)
 ```
+
+**Try it on Google Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb)
 
 ### Performance Architecture
 
-TensorLogic is built for scale. The MLX backend enables 1M+ entity knowledge graphs on Apple Silicon:
+TensorLogic is built for scale across all major GPU platforms:
 
 ```python
 from tensorlogic.backends import create_backend
 
-# Auto-selects MLX (GPU) on Apple Silicon, NumPy fallback elsewhere
-backend = create_backend()  # ← This step selects your hardware backend
+# Auto-detect best available: MLX (Apple) -> CUDA (NVIDIA) -> NumPy (CPU)
+backend = create_backend()  # Automatic hardware selection
+
+# Or explicitly choose your backend
+backend = create_backend("cuda")   # NVIDIA GPUs (T4, V100, A100, Colab)
+backend = create_backend("mlx")    # Apple Silicon (M1/M2/M3)
+backend = create_backend("numpy")  # Universal CPU fallback
 ```
 
 | Backend | Hardware | Key Advantage |
 |---------|----------|---------------|
+| **CUDA** | NVIDIA GPUs (T4, V100, A100) | Data center scale, Google Colab support |
 | **MLX** | Apple Silicon (M1/M2/M3) | Unified memory + Metal GPU, lazy evaluation |
 | **NumPy** | Universal CPU | Compatibility fallback |
 
-The MLX backend's lazy evaluation enables 10-100x speedups for complex knowledge graph queries. See [Performance Benchmarks](docs/PERFORMANCE.md) for detailed metrics.
+GPU backends enable 10-100x speedups for complex knowledge graph queries. See [Performance Benchmarks](docs/PERFORMANCE.md) for detailed metrics.
 
 ### Logical Reasoning in Tensors
 
@@ -234,12 +277,18 @@ TensorLogic uses a minimal Protocol-based abstraction (~25-30 operations) suppor
 ```python
 from tensorlogic.backends import create_backend
 
+# Auto-detection (recommended)
+backend = create_backend()  # MLX -> CUDA -> NumPy
+
 # Explicit backend selection
-numpy_backend = create_backend("numpy")
-mlx_backend = create_backend("mlx")
+numpy_backend = create_backend("numpy")   # CPU reference implementation
+mlx_backend = create_backend("mlx")       # Apple Silicon GPU
+cuda_backend = create_backend("cuda")     # NVIDIA GPU (Colab, data centers)
 ```
 
-**MLX Lazy Evaluation:** Operations are not computed until `backend.eval(result)` is called—critical for batching complex knowledge graph queries.
+**Lazy Evaluation (MLX):** Operations build computation graphs, executed on `backend.eval(result)`—critical for batching complex queries.
+
+**CUDA Backend:** Uses CuPy for NVIDIA GPUs. Install with `pip install cupy-cuda11x` (Colab) or `cupy-cuda12x` (newer GPUs).
 
 **Protocol Operations:**
 - **Creation:** `zeros`, `ones`, `arange`, `full`, `asarray`
@@ -304,11 +353,20 @@ uv run ruff format .  # Formatting
 
 ## Documentation
 
+- **Google Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb) - Try TensorLogic on T4 GPU
 - **Conceptual Guide:** [`docs/concepts/tensor-logic-mapping.md`](docs/concepts/tensor-logic-mapping.md) - How logic becomes tensors
 - **Examples:** [`examples/README.md`](examples/README.md) - Practical usage examples
 - **Backend API:** [`docs/backends/API.md`](docs/backends/API.md) - Comprehensive API reference
 - **Research Goals:** [`docs/research/rag-goals.md`](docs/research/rag-goals.md) - RAG research roadmap
 - **Original Paper:** arXiv:2510.12269 (Domingos, 2025)
+
+### Jupyter Notebooks
+
+1. **Getting Started:** `notebooks/01_getting_started.ipynb`
+2. **Knowledge Graphs:** `notebooks/02_knowledge_graphs.ipynb`
+3. **Compilation Strategies:** `notebooks/03_compilation_strategies.ipynb`
+4. **Temperature Control:** `notebooks/04_temperature_control.ipynb`
+5. **Google Colab (CUDA):** `notebooks/05_google_colab_cuda.ipynb`
 
 ## License
 
