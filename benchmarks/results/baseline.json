@@ -1,0 +1,205 @@
+{
+  "backend": "MLXBackend",
+  "platform": "darwin",
+  "timestamp": "2025-12-15T15:06:41.716431",
+  "results": [
+    {
+      "operation": "single_hop_exists",
+      "n_entities": 100,
+      "n_relations": 1,
+      "mean_time_ms": 0.008041795808821917,
+      "std_time_ms": 0.004357981238579165,
+      "min_time_ms": 0.005207955837249756,
+      "max_time_ms": 0.016667007002979517,
+      "memory_mb": 0.03814697265625,
+      "timestamp": "2025-12-15T15:06:41.637730"
+    },
+    {
+      "operation": "two_hop_composition",
+      "n_entities": 100,
+      "n_relations": 2,
+      "mean_time_ms": 0.006958609446883202,
+      "std_time_ms": 0.0017786212235104196,
+      "min_time_ms": 0.005875015631318092,
+      "max_time_ms": 0.010500021744519472,
+      "memory_mb": 0.11444091796875,
+      "timestamp": "2025-12-15T15:06:41.639282"
+    },
+    {
+      "operation": "three_hop_composition",
+      "n_entities": 100,
+      "n_relations": 3,
+      "mean_time_ms": 0.019100005738437176,
+      "std_time_ms": 0.011751371715008506,
+      "min_time_ms": 0.012625008821487427,
+      "max_time_ms": 0.04258396802470088,
+      "memory_mb": 0.152587890625,
+      "timestamp": "2025-12-15T15:06:41.641121"
+    },
+    {
+      "operation": "logical_and",
+      "n_entities": 100,
+      "n_relations": 2,
+      "mean_time_ms": 0.007324991747736931,
+      "std_time_ms": 0.002290173705361771,
+      "min_time_ms": 0.005832989700138569,
+      "max_time_ms": 0.011832977179437876,
+      "memory_mb": 0.11444091796875,
+      "timestamp": "2025-12-15T15:06:41.643009"
+    },
+    {
+      "operation": "logical_or",
+      "n_entities": 100,
+      "n_relations": 2,
+      "mean_time_ms": 0.006066600326448679,
+      "std_time_ms": 0.000960192830318696,
+      "min_time_ms": 0.005125009920448065,
+      "max_time_ms": 0.007874972652643919,
+      "memory_mb": 0.11444091796875,
+      "timestamp": "2025-12-15T15:06:41.644587"
+    },
+    {
+      "operation": "forall",
+      "n_entities": 100,
+      "n_relations": 1,
+      "mean_time_ms": 0.009533192496746778,
+      "std_time_ms": 0.005207852552237694,
+      "min_time_ms": 0.006458023563027382,
+      "max_time_ms": 0.019915984012186527,
+      "memory_mb": 0.03814697265625,
+      "timestamp": "2025-12-15T15:06:41.647087"
+    },
+    {
+      "operation": "single_hop_exists",
+      "n_entities": 500,
+      "n_relations": 1,
+      "mean_time_ms": 0.026116380468010902,
+      "std_time_ms": 0.006206512386621124,
+      "min_time_ms": 0.0219999928958714,
+      "max_time_ms": 0.038457976188510656,
+      "memory_mb": 0.95367431640625,
+      "timestamp": "2025-12-15T15:06:41.651133"
+    },
+    {
+      "operation": "two_hop_composition",
+      "n_entities": 500,
+      "n_relations": 2,
+      "mean_time_ms": 0.19504179945215583,
+      "std_time_ms": 0.03732360781002161,
+      "min_time_ms": 0.145500001963228,
+      "max_time_ms": 0.24620798649266362,
+      "memory_mb": 2.86102294921875,
+      "timestamp": "2025-12-15T15:06:41.654801"
+    },
+    {
+      "operation": "three_hop_composition",
+      "n_entities": 500,
+      "n_relations": 3,
+      "mean_time_ms": 0.35991660552099347,
+      "std_time_ms": 0.05860652195549644,
+      "min_time_ms": 0.31408300856128335,
+      "max_time_ms": 0.46954199206084013,
+      "memory_mb": 3.814697265625,
+      "timestamp": "2025-12-15T15:06:41.659795"
+    },
+    {
+      "operation": "logical_and",
+      "n_entities": 500,
+      "n_relations": 2,
+      "mean_time_ms": 0.05319159245118499,
+      "std_time_ms": 0.0049627113292585205,
+      "min_time_ms": 0.04995899507775903,
+      "max_time_ms": 0.0630829599685967,
+      "memory_mb": 2.86102294921875,
+      "timestamp": "2025-12-15T15:06:41.662570"
+    },
+    {
+      "operation": "logical_or",
+      "n_entities": 500,
+      "n_relations": 2,
+      "mean_time_ms": 0.055616803001612425,
+      "std_time_ms": 0.0035390934955566375,
+      "min_time_ms": 0.052749994210898876,
+      "max_time_ms": 0.06091699469834566,
+      "memory_mb": 2.86102294921875,
+      "timestamp": "2025-12-15T15:06:41.664800"
+    },
+    {
+      "operation": "forall",
+      "n_entities": 500,
+      "n_relations": 1,
+      "mean_time_ms": 0.03332501510158181,
+      "std_time_ms": 0.014835414960496788,
+      "min_time_ms": 0.02454203786328435,
+      "max_time_ms": 0.06287498399615288,
+      "memory_mb": 0.95367431640625,
+      "timestamp": "2025-12-15T15:06:41.667111"
+    },
+    {
+      "operation": "single_hop_exists",
+      "n_entities": 1000,
+      "n_relations": 1,
+      "mean_time_ms": 0.15489980578422546,
+      "std_time_ms": 0.037711986433328015,
+      "min_time_ms": 0.11370802531018853,
+      "max_time_ms": 0.21900003775954247,
+      "memory_mb": 3.814697265625,
+      "timestamp": "2025-12-15T15:06:41.672933"
+    },
+    {
+      "operation": "two_hop_composition",
+      "n_entities": 1000,
+      "n_relations": 2,
+      "mean_time_ms": 0.9648669976741076,
+      "std_time_ms": 0.13430648289585428,
+      "min_time_ms": 0.8729170076549053,
+      "max_time_ms": 1.231333997566253,
+      "memory_mb": 11.444091796875,
+      "timestamp": "2025-12-15T15:06:41.683188"
+    },
+    {
+      "operation": "three_hop_composition",
+      "n_entities": 1000,
+      "n_relations": 3,
+      "mean_time_ms": 2.244466810952872,
+      "std_time_ms": 0.1072577613238369,
+      "min_time_ms": 2.1187090314924717,
+      "max_time_ms": 2.4152499972842634,
+      "memory_mb": 15.2587890625,
+      "timestamp": "2025-12-15T15:06:41.701954"
+    },
+    {
+      "operation": "logical_and",
+      "n_entities": 1000,
+      "n_relations": 2,
+      "mean_time_ms": 0.20304139470681548,
+      "std_time_ms": 0.006446784168612411,
+      "min_time_ms": 0.19645795691758394,
+      "max_time_ms": 0.21537503926083446,
+      "memory_mb": 11.444091796875,
+      "timestamp": "2025-12-15T15:06:41.707042"
+    },
+    {
+      "operation": "logical_or",
+      "n_entities": 1000,
+      "n_relations": 2,
+      "mean_time_ms": 0.20873320754617453,
+      "std_time_ms": 0.01951552320624067,
+      "min_time_ms": 0.18379103858023882,
+      "max_time_ms": 0.23612496443092823,
+      "memory_mb": 11.444091796875,
+      "timestamp": "2025-12-15T15:06:41.711230"
+    },
+    {
+      "operation": "forall",
+      "n_entities": 1000,
+      "n_relations": 1,
+      "mean_time_ms": 0.13279180275276303,
+      "std_time_ms": 0.03101752376823302,
+      "min_time_ms": 0.10045903036370873,
+      "max_time_ms": 0.18583296332508326,
+      "memory_mb": 3.814697265625,
+      "timestamp": "2025-12-15T15:06:41.714637"
+    }
+  ]
+}
