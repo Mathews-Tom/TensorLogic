@@ -57,7 +57,7 @@ Before diving in, here's why you can trust TensorLogic for production:
 | Capability | Status | What It Means |
 |------------|--------|---------------|
 | **1M+ Entity Graphs** | Sparse tensor support | Handle enterprise-scale knowledge graphs |
-| **10-100x Speedups** | MLX + CUDA backends | Real-time inference on GPU hardware |
+| **Up to 700x Speedups** | MLX + CUDA backends | Real-time inference on GPU hardware |
 | **15 Theorems Proven** | Lean 4 verification | Mathematically verified core operations |
 | **99%+ Test Coverage** | 1,257 tests | Production-grade reliability |
 | **LangChain Integration** | RAG-ready | Drop into existing LLM pipelines |
@@ -104,7 +104,19 @@ backend = create_backend("numpy")  # Universal CPU fallback
 | **MLX** | Apple Silicon (M1/M2/M3) | Unified memory + Metal GPU, lazy evaluation |
 | **NumPy** | Universal CPU | Compatibility fallback |
 
-GPU backends enable 10-100x speedups for complex knowledge graph queries. See [Performance Benchmarks](docs/PERFORMANCE.md) for detailed metrics.
+### CUDA Performance Benchmarks (Tesla T4)
+
+Benchmarked on Google Colab with Tesla T4 GPU (15GB VRAM):
+
+| Knowledge Graph Size | CUDA (ms) | NumPy (ms) | Speedup |
+|---------------------|-----------|------------|---------|
+| 100 entities | 0.54 | 0.26 | 0.5x |
+| 500 entities | 0.54 | 20.42 | **37.5x** |
+| 1,000 entities | 1.37 | 181.62 | **132.5x** |
+| 2,000 entities | 7.93 | 1,574.37 | **198.5x** |
+| 5,000 entities | 59.57 | 42,167.71 | **707.8x** |
+
+**Average speedup: 215x** for knowledge graph reasoning. See [Performance Benchmarks](docs/PERFORMANCE.md) for detailed metrics.
 
 ### Logical Reasoning in Tensors
 

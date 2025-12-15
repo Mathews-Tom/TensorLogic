@@ -9,7 +9,7 @@ TensorLogic is a neural-symbolic AI framework that unifies logical reasoning and
 **Current Status:** Core framework complete (97%). Active development on advanced features (sparse tensors, RAG integration, Lean 4 verification).
 
 **Completed Components:**
-- Backend abstraction: MLX + NumPy with Protocol-based design (25+ operations)
+- Backend abstraction: MLX + CUDA + NumPy with Protocol-based design (25+ operations)
 - Core operations: AND, OR, NOT, IMPLIES with full test coverage
 - Quantifiers: EXISTS, FORALL (hard and soft variants)
 - Compilation strategies: soft_differentiable, hard_boolean, gödel, product, łukasiewicz
@@ -62,8 +62,9 @@ src/tensorlogic/
 │   ├── __init__.py
 │   ├── protocol.py       # TensorBackend Protocol (25+ operations)
 │   ├── mlx.py            # MLX implementation (Apple Silicon)
+│   ├── cuda.py           # CUDA implementation (NVIDIA GPUs via CuPy)
 │   ├── numpy.py          # NumPy fallback
-│   └── factory.py        # create_backend() factory
+│   └── factory.py        # create_backend() factory (auto-detects best)
 ├── core/                 # ✅ COMPLETE - Core tensor logic primitives
 │   ├── __init__.py
 │   ├── operations.py     # logical_and, logical_or, logical_not, logical_implies
@@ -95,11 +96,12 @@ src/tensorlogic/
 
 ### Key Design Principles
 
-**1. MLX-First Backend Strategy**
-- Primary backend: MLX (Apple Silicon optimized, lazy evaluation)
-- Scaling path: MLX CUDA backend for production
-- Fallback: NumPy for compatibility
-- Protocol-based abstraction (~25-30 operations, not heavy compatibility layer)
+**1. Multi-GPU Backend Strategy**
+- Auto-detection priority: MLX (Apple Silicon) → CUDA (NVIDIA) → NumPy (CPU)
+- MLX: Apple Silicon optimized with lazy evaluation, unified memory
+- CUDA: NVIDIA GPU support via CuPy (up to 700x speedup for large KGs)
+- NumPy: Universal CPU fallback for compatibility
+- Protocol-based abstraction (~25 operations, minimal overhead)
 
 **2. Einops-Style API Design**
 String-based pattern notation for self-documenting operations:
@@ -107,7 +109,7 @@ String-based pattern notation for self-documenting operations:
 ```python
 from tensorlogic import quantify, reason, create_backend
 
-backend = create_backend()  # Auto-selects MLX or NumPy
+backend = create_backend()  # Auto-selects MLX → CUDA → NumPy
 
 # Pattern-based quantified queries
 result = quantify(
@@ -311,21 +313,51 @@ class TensorBackend(Protocol):
 - Development (M1 Pro): Batch sizes 4-32, 8B models in BF16
 - Focus on developer experience and correctness over raw speed
 
+## CUDA Backend Specifics
+
+**CuPy-based implementation for NVIDIA GPUs:**
+
+```python
+import cupy as cp
+
+# CuPy mirrors NumPy API for easy porting
+result = cp.einsum('ij,jk->ik', a, b)
+
+# Unlike MLX, CuPy evaluates eagerly (no manual eval needed)
+# Memory management is automatic with GPU memory pool
+```
+
+**Installation options:**
+```bash
+pip install cupy-cuda12x  # CUDA 12.x (Google Colab, modern GPUs)
+pip install cupy-cuda11x  # CUDA 11.x (legacy systems)
+```
+
+**Performance benchmarks (Tesla T4):**
+
+| Knowledge Graph Size | CUDA (ms) | NumPy (ms) | Speedup |
+|---------------------|-----------|------------|---------|
+| 500 entities | 0.54 | 20.42 | **37.5x** |
+| 1,000 entities | 1.37 | 181.62 | **132.5x** |
+| 5,000 entities | 59.57 | 42,167.71 | **707.8x** |
+
+**Best for:** Large knowledge graphs (1K+ entities), data center deployments, Google Colab
+
 ## Implementation Phases
 
-### Completed (97%)
-1. ✅ **Core operations** - Tensor-to-logic primitives with MLX backend
+### Completed (98%)
+1. ✅ **Core operations** - Tensor-to-logic primitives with multi-backend support
 2. ✅ **Pattern language** - Einops-style string patterns for logical formulas
 3. ✅ **Compilation strategies** - Boolean, fuzzy (Gödel, product, Łukasiewicz), differentiable semantics
 4. ✅ **Developer tools** - Enhanced errors, type stubs (py.typed), documentation
+5. ✅ **CUDA backend** - NVIDIA GPU support via CuPy (up to 700x speedup, benchmarked on T4)
 
 ### In Progress
-5. 🔄 **Lean 4 bridge** - LeanDojo integration for verified operations (skeleton implemented)
-6. 🔄 **Sparse tensors** - Support for 1M+ entity knowledge graphs
-7. 🔄 **RAG integration** - Scalable symbolic-aware retrieval
+6. 🔄 **Lean 4 bridge** - LeanDojo integration for verified operations (skeleton implemented)
+7. 🔄 **Sparse tensors** - Support for 1M+ entity knowledge graphs
+8. 🔄 **RAG integration** - Scalable symbolic-aware retrieval
 
 ### Planned
-8. ⏳ **CUDA scaling** - Test and optimize MLX CUDA backend
 9. ⏳ **Proof-guided learning** - Train neural components with theorem prover feedback
 
 ## Anti-Patterns to Avoid
@@ -333,7 +365,7 @@ class TensorBackend(Protocol):
 **From competitor analysis (cool-japan/tensorlogic):**
 - ❌ Over-modularization with too many interconnected modules
 - ❌ Custom backend lock-in (use standard frameworks)
-- ❌ GPU backend as "future work" (MLX supports it now)
+- ❌ GPU backend as "future work" (TensorLogic: MLX + CUDA production-ready)
 
 **From existing neural-symbolic frameworks:**
 - ❌ Poor error messages (implement TensorSensor-style errors)
@@ -344,9 +376,11 @@ class TensorBackend(Protocol):
 
 - **Vision Document:** `docs/TensorLogic-Overview.md` - Comprehensive strategic assessment
 - **Conceptual Guide:** `docs/concepts/tensor-logic-mapping.md` - Tensor-to-logic mappings
+- **Performance:** `docs/PERFORMANCE.md` - MLX and CUDA benchmark results
 - **RAG Research:** `docs/research/rag-goals.md` - RAG integration roadmap
 - **Backend API:** `docs/backends/API.md` - Backend protocol reference
 - **Examples:** `examples/README.md` - Working code examples
+- **Colab Notebook:** `notebooks/05_google_colab_cuda.ipynb` - CUDA testing on T4 GPU
 - **Original Paper:** arXiv:2510.12269 (Domingos, 2025)
 
 ## Sage-Dev Integration

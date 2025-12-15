@@ -4,7 +4,13 @@ Comprehensive API documentation for TensorLogic's backend abstraction layer.
 
 ## Overview
 
-TensorLogic uses a Protocol-based backend abstraction with ~25-30 core operations, following the einops philosophy of minimal abstraction. This design allows seamless switching between MLX (GPU-optimized) and NumPy (CPU fallback) backends.
+TensorLogic uses a Protocol-based backend abstraction with ~25-30 core operations, following the einops philosophy of minimal abstraction. This design allows seamless switching between MLX (Apple Silicon), CUDA (NVIDIA GPUs), and NumPy (CPU fallback) backends.
+
+| Backend | Hardware | Performance | Use Case |
+|---------|----------|-------------|----------|
+| **CUDA** | NVIDIA GPUs | Up to 700x vs CPU | Production, data centers, Google Colab |
+| **MLX** | Apple Silicon | Up to 100x vs CPU | Development, Apple devices |
+| **NumPy** | Any CPU | Baseline | Testing, compatibility, small graphs |
 
 ## Table of Contents
 
@@ -19,21 +25,23 @@ TensorLogic uses a Protocol-based backend abstraction with ~25-30 core operation
 
 ## Factory Functions
 
-### `create_backend(name: str = "mlx") -> TensorBackend`
+### `create_backend(name: str = "auto") -> TensorBackend`
 
 Create a tensor backend by name with graceful fallback.
 
 **Parameters:**
-- `name` (str, optional): Backend identifier. Options: `"mlx"`, `"numpy"`. Defaults to `"mlx"`.
+- `name` (str, optional): Backend identifier. Options: `"auto"`, `"cuda"`, `"mlx"`, `"numpy"`. Defaults to `"auto"`.
 
 **Returns:**
 - `TensorBackend`: Backend instance conforming to TensorBackend protocol
 
 **Raises:**
-- `ValueError`: If backend name is unknown or NumPy dependencies are missing
-- `ImportError`: If NumPy backend is requested but unavailable
+- `ValueError`: If backend name is unknown or required dependencies are missing
+- `ImportError`: If requested backend is unavailable
 
 **Behavior:**
+- When `name="auto"`: Auto-detects best available backend in priority order: MLX → CUDA → NumPy
+- When `name="cuda"`: Creates CUDA backend using CuPy. Requires NVIDIA GPU and CuPy installation.
 - When `name="mlx"`: Attempts to import MLX backend. If MLX is unavailable, issues a warning and falls back to NumPy.
 - When `name="numpy"`: Directly creates NumPy backend. Raises if NumPy unavailable.
 - All created backends are validated against the TensorBackend protocol before returning.
@@ -43,22 +51,31 @@ Create a tensor backend by name with graceful fallback.
 ```python
 from tensorlogic.backends import create_backend
 
-# Default: try MLX, fallback to NumPy
-backend = create_backend()
+# Auto-detect best available backend (recommended)
+backend = create_backend()  # or create_backend("auto")
 
-# Explicitly request NumPy
-numpy_backend = create_backend("numpy")
+# Explicitly request CUDA (NVIDIA GPUs)
+cuda_backend = create_backend("cuda")
 
-# Explicitly request MLX (will fallback to NumPy if MLX unavailable)
+# Explicitly request MLX (Apple Silicon)
 mlx_backend = create_backend("mlx")
+
+# Explicitly request NumPy (CPU fallback)
+numpy_backend = create_backend("numpy")
 ```
 
-**Installation Suggestions:**
+**Installation by Backend:**
 
-If MLX is unavailable, the warning message includes:
-```
-MLX backend unavailable (<error>), falling back to NumPy.
-Install with: uv add mlx>=0.30.0
+```bash
+# CUDA backend (NVIDIA GPUs)
+pip install cupy-cuda12x  # CUDA 12.x (recommended, Google Colab)
+pip install cupy-cuda11x  # CUDA 11.x (legacy systems)
+
+# MLX backend (Apple Silicon)
+pip install mlx>=0.30.0
+
+# NumPy backend (included by default)
+pip install numpy>=1.24.0
 ```
 
 ---
@@ -784,6 +801,62 @@ result = backend.einsum('ij,jk->ik', x, y)  # Already computed
 
 ---
 
+### CUDABackend
+
+CUDA backend implementation for NVIDIA GPU acceleration using CuPy.
+
+**Key Features:**
+- High-performance GPU acceleration (up to 700x vs CPU)
+- Google Colab support (T4, V100, A100 GPUs)
+- Eager evaluation with explicit synchronization
+- CuPy ecosystem compatibility
+
+**Installation:**
+```bash
+# CUDA 12.x (recommended for Google Colab and modern systems)
+pip install cupy-cuda12x
+
+# CUDA 11.x (legacy systems)
+pip install cupy-cuda11x
+```
+
+**Usage:**
+```python
+from tensorlogic.backends import create_backend
+import cupy as cp
+
+backend = create_backend("cuda")
+
+# Create tensors on GPU
+x = cp.ones((1000, 1000), dtype=cp.float32)
+y = cp.ones((1000, 1000), dtype=cp.float32)
+
+# Perform operations on GPU
+result = backend.einsum('ij,jk->ik', x, y)
+
+# Synchronize for timing (optional)
+cp.cuda.Stream.null.synchronize()
+
+# Transfer back to CPU if needed
+result_cpu = cp.asnumpy(result)
+```
+
+**Performance Benchmarks (Tesla T4):**
+
+| Graph Size | CUDA Time | NumPy Time | Speedup |
+|------------|-----------|------------|---------|
+| 500 entities | 0.54 ms | 20.42 ms | 37.5x |
+| 1,000 entities | 1.37 ms | 181.62 ms | 132.5x |
+| 5,000 entities | 59.57 ms | 42,167.71 ms | 707.8x |
+
+**Best Practices:**
+- Use CUDA for knowledge graphs with 500+ entities
+- Use NumPy for small graphs (<500 entities) to avoid GPU overhead
+- Call `cp.cuda.Stream.null.synchronize()` before timing operations
+- Use `cp.asnumpy()` to transfer results back to CPU
+
+---
+
 ## Type System
 
 All backends use modern Python 3.12+ type hints:
@@ -1025,15 +1098,18 @@ except TypeError as e:
 
 ## FAQ
 
-**Q: When should I use MLX vs NumPy backend?**
+**Q: Which backend should I use?**
 
-A: Use MLX for production inference on Apple Silicon (GPU acceleration). Use NumPy for development, testing, or non-Apple platforms.
+A:
+- **CUDA**: Best for production on NVIDIA GPUs (T4, V100, A100), Google Colab, or data centers. Up to 700x faster than CPU.
+- **MLX**: Best for Apple Silicon development (M1/M2/M3). Up to 100x faster than CPU with unified memory benefits.
+- **NumPy**: Best for small graphs (<500 entities), testing, or when GPU is unavailable.
 
 ---
 
 **Q: Do I need to call eval() after every operation?**
 
-A: Only for MLX backend. NumPy uses eager evaluation. Best practice: call `eval()` on final result tensors.
+A: Only for MLX backend. NumPy and CUDA use eager evaluation. Best practice: call `eval()` on final result tensors when using MLX.
 
 ---
 
@@ -1045,23 +1121,47 @@ A: Not recommended. Tensors from different backends are incompatible. Choose one
 
 **Q: How do I convert between backend tensor types?**
 
-A: Use `asarray()` to convert from Python data, or extract values and recreate:
+A: Use `asarray()` to convert from Python data, or use backend-specific conversion:
 
 ```python
-mlx_backend = create_backend("mlx")
-numpy_backend = create_backend("numpy")
+# CUDA (CuPy) to NumPy
+import cupy as cp
+cuda_tensor = cp.ones((2, 3))
+numpy_array = cp.asnumpy(cuda_tensor)
+
+# NumPy to CUDA
+numpy_array = np.ones((2, 3))
+cuda_tensor = cp.asarray(numpy_array)
 
 # MLX to NumPy
 mlx_tensor = mlx_backend.ones((2, 3))
-# Convert to Python list, then to NumPy
 numpy_tensor = numpy_backend.asarray(mlx_tensor.tolist())
 ```
 
 ---
 
-**Q: What's the performance difference between MLX and NumPy?**
+**Q: What's the performance crossover point?**
 
-A: For large operations (>1000x1000), MLX can be 10-100x faster on Apple Silicon due to GPU acceleration. For small operations, overhead may make NumPy competitive.
+A: Based on benchmarks:
+- **<500 entities**: NumPy is competitive or faster (GPU overhead dominates)
+- **500-1,000 entities**: CUDA 30-130x faster
+- **1,000+ entities**: CUDA 100-700x faster (scales super-linearly)
+
+---
+
+**Q: How do I use TensorLogic on Google Colab?**
+
+A: See the [Google Colab notebook](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb):
+
+```python
+# Install
+!pip install git+https://github.com/Mathews-Tom/TensorLogic.git
+!pip install cupy-cuda12x
+
+# Use
+from tensorlogic import create_backend
+backend = create_backend("cuda")  # or "auto" to auto-detect
+```
 
 ---
 

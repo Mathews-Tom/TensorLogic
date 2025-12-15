@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **CUDA Backend** (`tensorlogic.backends.cuda`)
+  - CuPy-based implementation for NVIDIA GPUs
+  - Full Protocol compliance with ~25 operations
+  - Auto-detection via `create_backend()` (MLX → CUDA → NumPy priority)
+  - Explicit selection: `create_backend("cuda")`
+  - Google Colab compatible with `cupy-cuda12x`
+  - Benchmarked on Tesla T4 GPU (15GB VRAM, CUDA 12.4)
+
+- **CUDA Performance Benchmarks**
+  - Knowledge graph reasoning: up to **707.8x speedup** vs NumPy at 5,000 entities
+  - Average speedup: **215.4x** across tested scales (100-5,000 entities)
+  - Large-scale demo: 10,000 entities with 99,917 edges
+  - 2-hop inference: 485.4ms, 3-hop inference: 8,217.1ms
+  - GPU memory usage: 381.5MB for 10K×10K relation matrix
+
+- **Google Colab Notebook** (`notebooks/05_google_colab_cuda.ipynb`)
+  - Complete CUDA backend testing and benchmarking
+  - Relation composition benchmarks at multiple scales
+  - Quantified query examples
+  - Large-scale knowledge graph inference demo
+
 - **Lean 4 Verification**: Formal verification of 15 logical operation theorems
   - Commutativity and associativity of AND/OR
   - De Morgan's laws and idempotence
