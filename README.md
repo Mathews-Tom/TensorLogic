@@ -218,20 +218,23 @@ See [`docs/backends/API.md`](docs/backends/API.md) for complete API reference.
 
 ## Project Status
 
-**Current Phase:** Core Framework Complete (97%)
+**Current Phase:** Production Ready
 
 **Completed:**
 - BACKEND-001: TensorBackend Protocol with MLX + NumPy (PR #6)
 - CORE-001: Logical Operations & Quantifiers (PR #7)
 - API-001: Pattern Language & Compilation (PR #8)
-- 817 tests, 99.76% pass rate, 100% type coverage
+- VERIF-001: Lean 4 Verification Bridge (15 theorems proven)
+- RAG-001: Integration module with LangChain adapter
+- 1,257 tests, 99%+ pass rate, 100% type coverage
 
-**Next Phase:** Advanced Applications
-- COMP-001: Compilation Strategy Optimization
-- VERIF-001: Lean 4 Verification Bridge
-- RAG Integration: Scalable symbolic-aware retrieval
+**Features:**
+- Sparse tensor support for 1M+ entity knowledge graphs
+- LangChain-compatible retriever with hybrid neural-symbolic scoring
+- 4 Jupyter notebooks for interactive learning
+- Benchmark suite for scale validation
 
-See [`docs/research/rag-goals.md`](docs/research/rag-goals.md) for research roadmap.
+See [`docs/tutorials/index.md`](docs/tutorials/index.md) for tutorials and [`docs/research/rag-goals.md`](docs/research/rag-goals.md) for research roadmap.
 
 ## Development
 
@@ -248,6 +251,7 @@ uv run pytest --cov=tensorlogic --cov-report=html
 uv run pytest tests/test_core/
 uv run pytest tests/test_backends/
 uv run pytest tests/test_api/
+uv run pytest tests/test_integrations/
 ```
 
 ### Type Checking

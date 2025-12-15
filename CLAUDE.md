@@ -6,7 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TensorLogic is a neural-symbolic AI framework that unifies logical reasoning and tensor computation. Based on Pedro Domingos' Tensor Logic paper (arXiv:2510.12269), it implements the mathematical equivalence between logical rules and Einstein summation.
 
-**Current Status:** Pre-implementation planning phase. No source code exists yet, but comprehensive architecture is documented.
+**Current Status:** Core framework complete (97%). Active development on advanced features (sparse tensors, RAG integration, Lean 4 verification).
+
+**Completed Components:**
+- Backend abstraction: MLX + NumPy with Protocol-based design (25+ operations)
+- Core operations: AND, OR, NOT, IMPLIES with full test coverage
+- Quantifiers: EXISTS, FORALL (hard and soft variants)
+- Compilation strategies: soft_differentiable, hard_boolean, gödel, product, łukasiewicz
+- Pattern API: `quantify()` and `reason()` with temperature control
+- Test suite: 1,100+ tests with property-based testing (hypothesis)
 
 **Core Concept:** Logical operations map to tensor operations:
 - Logical AND → Hadamard product
@@ -28,7 +36,7 @@ uv add --dev <package>        # Development dependency
 uv run <command>              # Execute with uv-managed environment
 uv sync                       # Sync dependencies from lock file
 
-# Testing (once implemented)
+# Testing
 uv run pytest                 # Run all tests
 uv run pytest tests/test_core/test_operations.py  # Single test file
 uv run pytest tests/test_core/test_operations.py::test_and_operation  # Single test
@@ -44,28 +52,45 @@ uv run ruff format .          # Format code
 
 ## Architecture
 
-### Planned Directory Structure
+### Directory Structure (Implemented)
 
 ```
 src/tensorlogic/
-├── core/              # Core tensor logic primitives
-│   ├── operations.py  # Logical ops as tensors (AND, OR, implications)
-│   ├── quantifiers.py # Existential/universal quantification
-│   └── semantics.py   # Boolean, fuzzy, differentiable semantics
-├── backends/          # Backend abstraction (Protocol-based, ~25-30 ops)
-│   ├── protocol.py    # TensorBackend Protocol
-│   ├── mlx.py         # MLX implementation (primary)
-│   └── numpy.py       # NumPy fallback
-├── api/               # High-level einops-style API
-│   ├── patterns.py    # Pattern language parser
-│   ├── quantify.py    # quantify() function
-│   └── reason.py      # reason() with temperature control
-├── verification/      # Lean 4 integration (future)
-│   ├── bridge.py      # LeanDojo bridge
-│   └── theorems.py    # Verified tensor operation theorems
-└── utils/
-    ├── errors.py      # Enhanced error messages (TensorLogicError)
-    └── validation.py  # Runtime validation
+├── __init__.py           # Package entry point with top-level exports
+├── py.typed              # PEP 561 type marker
+├── backends/             # ✅ COMPLETE - Backend abstraction
+│   ├── __init__.py
+│   ├── protocol.py       # TensorBackend Protocol (25+ operations)
+│   ├── mlx.py            # MLX implementation (Apple Silicon)
+│   ├── numpy.py          # NumPy fallback
+│   └── factory.py        # create_backend() factory
+├── core/                 # ✅ COMPLETE - Core tensor logic primitives
+│   ├── __init__.py
+│   ├── operations.py     # logical_and, logical_or, logical_not, logical_implies
+│   ├── quantifiers.py    # exists, forall (hard & soft variants)
+│   ├── composition.py    # Predicate composition
+│   └── temperature.py    # Temperature-scaled reasoning
+├── api/                  # ✅ COMPLETE - High-level einops-style API
+│   ├── __init__.py
+│   ├── patterns.py       # quantify() and reason() functions
+│   ├── parser.py         # PatternParser with AST
+│   ├── validation.py     # PatternValidator
+│   ├── errors.py         # TensorLogicError hierarchy
+│   └── compiler.py       # Pattern compilation & caching
+├── compilation/          # ✅ COMPLETE - Multiple semantic strategies
+│   ├── __init__.py
+│   ├── protocol.py       # CompilationStrategy Protocol
+│   ├── factory.py        # create_strategy()
+│   └── strategies/       # 5 compilation strategies
+│       ├── hard.py       # HardBooleanStrategy
+│       ├── soft.py       # SoftDifferentiableStrategy
+│       ├── godel.py      # GodelFuzzyStrategy
+│       ├── product.py    # ProductFuzzyStrategy
+│       └── lukasiewicz.py # LukasiewiczFuzzyStrategy
+└── verification/         # 🔄 IN PROGRESS - Lean 4 integration
+    ├── __init__.py
+    ├── lean_bridge.py    # LeanBridge class (placeholder implementation)
+    └── results.py        # VerificationResult dataclass
 ```
 
 ### Key Design Principles
@@ -80,17 +105,23 @@ src/tensorlogic/
 String-based pattern notation for self-documenting operations:
 
 ```python
-# API style to implement
-quantify(
-    'forall x in batch: P(x) -> Q(x)',
+from tensorlogic import quantify, reason, create_backend
+
+backend = create_backend()  # Auto-selects MLX or NumPy
+
+# Pattern-based quantified queries
+result = quantify(
+    'forall x: P(x) -> Q(x)',
     predicates={'P': predicate_p, 'Q': predicate_q},
-    aggregator='product'
+    backend=backend
 )
 
-reason(
+# Temperature-controlled reasoning
+inference = reason(
     'exists y: Related(x, y) and HasProperty(y)',
     bindings={'x': entity_batch},
-    temperature=0.0  # 0.0 = deductive, higher = analogical
+    temperature=0.0,  # 0.0 = deductive, higher = analogical
+    backend=backend
 )
 ```
 
@@ -282,13 +313,20 @@ class TensorBackend(Protocol):
 
 ## Implementation Phases
 
-1. **Core operations** - Tensor-to-logic primitives with MLX backend
-2. **Pattern language** - Einops-style string patterns for logical formulas
-3. **Compilation strategies** - Boolean, fuzzy (Gödel, product, Łukasiewicz), differentiable semantics
-4. **Developer tools** - Enhanced errors, type stubs, documentation
-5. **Lean 4 bridge** - LeanDojo integration for verified operations
-6. **CUDA scaling** - Test and optimize MLX CUDA backend
-7. **Proof-guided learning** - Train neural components with theorem prover feedback
+### Completed (97%)
+1. ✅ **Core operations** - Tensor-to-logic primitives with MLX backend
+2. ✅ **Pattern language** - Einops-style string patterns for logical formulas
+3. ✅ **Compilation strategies** - Boolean, fuzzy (Gödel, product, Łukasiewicz), differentiable semantics
+4. ✅ **Developer tools** - Enhanced errors, type stubs (py.typed), documentation
+
+### In Progress
+5. 🔄 **Lean 4 bridge** - LeanDojo integration for verified operations (skeleton implemented)
+6. 🔄 **Sparse tensors** - Support for 1M+ entity knowledge graphs
+7. 🔄 **RAG integration** - Scalable symbolic-aware retrieval
+
+### Planned
+8. ⏳ **CUDA scaling** - Test and optimize MLX CUDA backend
+9. ⏳ **Proof-guided learning** - Train neural components with theorem prover feedback
 
 ## Anti-Patterns to Avoid
 
@@ -305,9 +343,10 @@ class TensorBackend(Protocol):
 ## Documentation References
 
 - **Vision Document:** `docs/TensorLogic-Overview.md` - Comprehensive strategic assessment
-- **Architecture:** `.sage/agent/system/architecture.md` - System architecture
-- **Tech Stack:** `.sage/agent/system/tech-stack.md` - Technology decisions
-- **Code Patterns:** `.sage/agent/examples/python/` - Template patterns (pre-implementation)
+- **Conceptual Guide:** `docs/concepts/tensor-logic-mapping.md` - Tensor-to-logic mappings
+- **RAG Research:** `docs/research/rag-goals.md` - RAG integration roadmap
+- **Backend API:** `docs/backends/API.md` - Backend protocol reference
+- **Examples:** `examples/README.md` - Working code examples
 - **Original Paper:** arXiv:2510.12269 (Domingos, 2025)
 
 ## Sage-Dev Integration
