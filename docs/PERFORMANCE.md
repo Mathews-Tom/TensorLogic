@@ -68,6 +68,15 @@ Lazy evaluation provides significant performance benefits by:
 2. Optimizing entire operation chains
 3. Reducing redundant memory transfers
 
+### GPU Acceleration for Large Operations
+
+For large operations (>1000x1000 matrices), MLX can deliver **10-100x speedups** on Apple Silicon due to GPU acceleration. This is particularly relevant for:
+- Knowledge graph reasoning with 1M+ entities
+- Batch inference over large relation tensors
+- Multi-hop reasoning chains
+
+For smaller operations, Python call overhead may make NumPy competitive. The crossover point depends on operation complexity and matrix sizes.
+
 ## Running Performance Tests
 
 Execute the performance benchmark suite:
@@ -162,6 +171,7 @@ The TensorLogic backend abstraction achieves near-zero-cost abstraction for real
 - **<2% overhead** for composite operations (realistic tensor logic workloads)
 - **Efficient batch processing** (4-32 examples)
 - **75% speedup** from lazy evaluation
+- **10-100x GPU acceleration** for large operations (>1000x1000 matrices)
 - **Zero memory leaks** in repeated operations
 
 The Protocol-based design provides clean abstraction without sacrificing performance, validating the einops-inspired minimal abstraction philosophy.

@@ -57,7 +57,11 @@ Do you need exact boolean logic?
 
 ### Detailed Strategy Descriptions
 
+See the [README](../../README.md#compilation-strategies) for a quick problem-driven overview of when to use each strategy.
+
 #### soft_differentiable (Default)
+
+**Problem solved:** "I want to train a model where the loss includes logical constraints"
 
 **Best for:** Neural-symbolic training, gradient-based optimization
 
@@ -89,7 +93,9 @@ loss.backward()  # Gradients flow through AND, OR, quantifiers
 
 #### hard_boolean
 
-**Best for:** Production inference, exact logical reasoning, zero hallucinations
+**Problem solved:** "I need mathematically guaranteed answers with no approximation"
+
+**Best for:** Production inference, exact logical reasoning, zero hallucinations. Integrates with [Lean 4 verification](../specs/verification/spec.md) for formal proof guarantees.
 
 **Semantics:** Discrete boolean logic (0 or 1 only)
 - AND: `step(a * b)` (discrete conjunction)
@@ -117,6 +123,8 @@ result = strategy.compile_and(a, b)  # Produces 0 or 1, never 0.5
 ```
 
 #### godel (Gödel Fuzzy Logic)
+
+**Problem solved:** "I need a grade (0.0-1.0), not just true/false—for scoring similarity, ranking, or recommendation"
 
 **Best for:** Fuzzy reasoning with conservative semantics, subgradient optimization
 
@@ -146,6 +154,8 @@ condition = strategy.compile_and(temp_high, pressure_low)  # min(0.8, 0.6) = 0.6
 
 #### product (Product Fuzzy Logic)
 
+**Problem solved:** "I'm combining probabilities and want P(A∧B) = P(A) × P(B)—for probabilistic inference in Bayesian knowledge graphs"
+
 **Best for:** Fuzzy reasoning with probabilistic semantics, smooth training
 
 **Semantics:** Product t-norm
@@ -173,6 +183,8 @@ combined = strategy.compile_and(expert_1_confidence, expert_2_confidence)  # 0.7
 ```
 
 #### lukasiewicz (Łukasiewicz Fuzzy Logic)
+
+**Problem solved:** "I need bounded confidence scores that don't explode—for multi-hop reasoning where confidence degrades gracefully"
 
 **Best for:** Fuzzy reasoning with strict boundary conditions, sum-based semantics
 

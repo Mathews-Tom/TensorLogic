@@ -101,9 +101,9 @@ relevant_loves = logical_implies(children_mask, alice_loves, backend=backend)
 all_loved = forall(relevant_loves, backend=backend)
 ```
 
-## Temperature Control Explained
+## Temperature-Controlled Inference
 
-Temperature controls the reasoning mode, transitioning between exact logic and soft inference:
+Temperature controls the reasoning mode, transitioning between exact logic and soft inference. This is TensorLogic's core differentiator—see [Beyond Deduction](../../README.md#beyond-deduction-enabling-generalization-with-analogical-reasoning) in the main README for the strategic overview.
 
 | Temperature | Reasoning Mode | Mathematical Effect | Use Case |
 |-------------|----------------|---------------------|----------|
