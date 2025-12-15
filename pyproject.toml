@@ -52,7 +52,7 @@ all = [
     "scipy>=1.11.0",
 ]
 colab = [
-    "cupy-cuda11x>=13.0.0",
+    "cupy-cuda12x>=13.0.0",
     "scipy>=1.11.0",
 ]
 
