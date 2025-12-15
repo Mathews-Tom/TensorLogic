@@ -76,8 +76,8 @@ pip install python-tensorlogic
 pip install python-tensorlogic mlx>=0.30.0
 
 # NVIDIA GPU / Google Colab (CUDA backend)
-pip install python-tensorlogic cupy-cuda11x  # CUDA 11.x (Colab)
-pip install python-tensorlogic cupy-cuda12x  # CUDA 12.x (newer GPUs)
+pip install python-tensorlogic cupy-cuda12x  # CUDA 12.x (Colab, recommended)
+pip install python-tensorlogic cupy-cuda11x  # CUDA 11.x (legacy systems)
 ```
 
 **Try it on Google Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb)
@@ -288,7 +288,7 @@ cuda_backend = create_backend("cuda")     # NVIDIA GPU (Colab, data centers)
 
 **Lazy Evaluation (MLX):** Operations build computation graphs, executed on `backend.eval(result)`—critical for batching complex queries.
 
-**CUDA Backend:** Uses CuPy for NVIDIA GPUs. Install with `pip install cupy-cuda11x` (Colab) or `cupy-cuda12x` (newer GPUs).
+**CUDA Backend:** Uses CuPy for NVIDIA GPUs. Install with `pip install cupy-cuda12x` (Colab & modern GPUs) or `cupy-cuda11x` (legacy systems).
 
 **Protocol Operations:**
 - **Creation:** `zeros`, `ones`, `arange`, `full`, `asarray`

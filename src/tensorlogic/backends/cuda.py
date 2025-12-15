@@ -11,8 +11,8 @@ Key characteristics:
 - Supports automatic differentiation via cupy.gradient (limited)
 
 Requirements:
-    Install with: uv add cupy-cuda12x  # For CUDA 12.x
-    Or: pip install cupy-cuda11x  # For CUDA 11.x (Google Colab)
+    Install with: uv add cupy-cuda12x  # For CUDA 12.x (Colab, recommended)
+    Or: pip install cupy-cuda11x  # For CUDA 11.x (legacy systems)
 
 Note: CuPy requires NVIDIA GPU with CUDA support. For Apple Silicon,
 use the MLX backend instead.
@@ -28,8 +28,8 @@ try:
 except ImportError as e:
     raise ImportError(
         "CuPy is required for CUDA backend. "
-        "Install with: pip install cupy-cuda12x (for CUDA 12.x) "
-        "or pip install cupy-cuda11x (for CUDA 11.x on Colab)"
+        "Install with: pip install cupy-cuda12x (for CUDA 12.x, Colab) "
+        "or pip install cupy-cuda11x (for CUDA 11.x legacy systems)"
     ) from e
 
 

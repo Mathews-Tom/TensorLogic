@@ -103,7 +103,7 @@ def create_backend(name: str = "auto") -> TensorBackend:
         except ImportError as e:
             warnings.warn(
                 f"CUDA backend unavailable ({e}), falling back to NumPy. "
-                "Install with: pip install cupy-cuda12x (CUDA 12) or cupy-cuda11x (CUDA 11/Colab)",
+                "Install with: pip install cupy-cuda12x (CUDA 12/Colab) or cupy-cuda11x (CUDA 11 legacy)",
                 stacklevel=2,
             )
             name = "numpy"
