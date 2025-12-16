@@ -2,13 +2,57 @@
 
 Welcome to TensorLogic! These tutorials will guide you from basic concepts to advanced neural-symbolic reasoning.
 
+---
+
+## Choose Your Starting Point
+
+### I'm New to AI and Logic
+**Path:** Newcomers Guide → Hello World → Family Tree → Temperature Demo
+**Time:** 30-60 minutes to productivity
+
+1. [Newcomers Guide](00_newcomers_guide.md) - Zero-prerequisite introduction
+2. `examples/00_hello_world.py` - Your first 10 lines
+3. `examples/01_family_tree_minimal.py` - Multi-hop reasoning
+4. `examples/02_temperature_demo.py` - The temperature dial
+
+### I Know Prolog/Datalog
+**Path:** From Datalog Guide → Temperature Guide → Knowledge Graph Example
+**Time:** 20-30 minutes to productivity
+
+1. [From Datalog](01_from_datalog.md) - Translation guide *(coming soon)*
+2. [Temperature Guide](03_temperature_guide.md) - Temperature semantics
+3. `examples/knowledge_graph_reasoning.py` - Full 8-entity example
+
+### I Know PyTorch/Deep Learning
+**Path:** From PyTorch Guide → Gradient Training → Compilation Strategies
+**Time:** 20-30 minutes to productivity
+
+1. [From PyTorch](02_from_pytorch.md) - Concept mapping *(coming soon)*
+2. `examples/gradient_training.py` - Differentiable logic
+3. `notebooks/03_compilation_strategies.ipynb` - Train-soft/infer-hard
+
+### I'm a Researcher
+**Path:** Conceptual Guide → Original Paper → Specs
+**Time:** 2-3 hours for deep understanding
+
+1. [Conceptual Guide](../concepts/tensor-logic-mapping.md) - Mathematical foundations
+2. [arXiv:2510.12269](https://arxiv.org/abs/2510.12269) - Original paper
+3. `docs/specs/` - Technical specifications
+
+---
+
+## Getting Help
+
+**Something not working?** See [Troubleshooting Guide](04_troubleshooting.md)
+
+---
+
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.12+
-- uv package manager
-- Basic understanding of tensors and logic
+- Basic Python knowledge (no logic/tensor background required)
 
 ### Installation
 
