@@ -7,6 +7,91 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mathews-Tom/TensorLogic/blob/main/notebooks/05_google_colab_cuda.ipynb)
 
+## What Is This? (30-Second Pitch)
+
+TensorLogic is a **reasoning framework** with a single parameter that controls how strictly your AI follows logic:
+
+```
+             THE TEMPERATURE DIAL
+
+    STRICT                              CREATIVE
+    T=0.0 ─────────────────────────────── T=2.0
+      │                                     │
+      ▼                                     ▼
+  "Alice is Bob's grandparent"     "Alice might be related
+   ONLY if the data proves it       to Bob based on patterns"
+      │                                     │
+      ▼                                     ▼
+   Zero hallucinations              Generalizes from
+   Provably correct                 incomplete data
+```
+
+**Think of it like a volume knob:**
+- **Turn it to 0** → Strict database query (only returns what's explicitly true)
+- **Turn it up** → Fuzzy search (finds likely matches even with missing data)
+
+**No PhD required.** If you can write Python lists, you can use TensorLogic.
+
+## The 3-Minute Tour
+
+Try these examples in order. Each builds on the previous.
+
+### Level 0: Hello World (5 lines of logic)
+
+```bash
+uv run python examples/00_hello_world.py   # or: pip install python-tensorlogic && python ...
+```
+
+```python
+from tensorlogic import create_backend, logical_and
+
+backend = create_backend()  # Auto-selects best GPU/CPU
+facts_a = [1.0, 0.0, 1.0, 0.0]  # TRUE, FALSE, TRUE, FALSE
+facts_b = [1.0, 1.0, 0.0, 0.0]  # TRUE, TRUE, FALSE, FALSE
+
+result = logical_and(facts_a, facts_b, backend=backend)
+print(result)  # [1. 0. 0. 0.] - Only position 0 is TRUE in BOTH
+```
+
+### Level 1: Family Tree (Multi-Hop Reasoning)
+
+```bash
+uv run python examples/01_family_tree_minimal.py
+```
+
+```python
+# "Alice is parent of Bob, Bob is parent of Carol"
+# Who is Alice's grandchild? (We never stated this directly!)
+
+parent = [
+    [0, 1, 0],  # Alice → Bob
+    [0, 0, 1],  # Bob → Carol
+    [0, 0, 0],  # Carol → (no one)
+]
+
+# Matrix multiply = "follow two parent edges" = grandparent!
+grandparent = parent @ parent  # Alice → Carol (inferred!)
+```
+
+### Level 2: Temperature Control
+
+```bash
+uv run python examples/02_temperature_demo.py
+```
+
+```python
+# User preferences (some uncertain)
+likes_action = [1.0, 0.6, 0.0, 0.5]  # User 3 = unknown (0.5)
+likes_comedy = [0.8, 0.5, 0.9, 0.7]
+
+# T=0: Only recommend when CERTAIN → User 0 only
+# T=1: Recommend with uncertainty  → Users 0, 1, 3 (graded scores)
+```
+
+**Ready for more?** See [examples/README.md](examples/README.md) for the complete progression.
+
+---
+
 ## The Problem TensorLogic Solves
 
 Traditional AI forces a choice: **logical solvers** give you provable correctness but can't generalize beyond their rules. **Neural networks** generalize beautifully but hallucinate with no guarantees. You've had to pick one.
@@ -129,12 +214,13 @@ backend = create_backend()
 
 # Define relations as tensors (family knowledge graph)
 # Rows = subject, Columns = object
-parent = backend.asarray([
+import numpy as np
+parent = np.array([
     [0., 1., 1., 0.],  # Alice is parent of Bob, Carol
     [0., 0., 0., 1.],  # Bob is parent of David
     [0., 0., 0., 0.],  # Carol has no children
     [0., 0., 0., 0.],  # David has no children
-])
+], dtype=np.float32)
 
 # Infer grandparent: exists y: Parent(x,y) AND Parent(y,z)
 # Using einsum: sum over intermediate variable y
@@ -330,6 +416,62 @@ See [`docs/backends/API.md`](docs/backends/API.md) for complete API reference.
 - Benchmark suite for scale validation
 
 See [`docs/tutorials/index.md`](docs/tutorials/index.md) for tutorials and [`docs/research/rag-goals.md`](docs/research/rag-goals.md) for research roadmap.
+
+## FAQ
+
+### Do I need to know logic notation (∀, ∃, →)?
+
+**No.** TensorLogic uses plain Python. The mathematical notation in the docs is just for those who want to understand the theory. You can use the library without ever seeing a logic symbol.
+
+### Do I need to understand tensors?
+
+**Think spreadsheets.** A tensor is just a table of numbers. A 2D tensor is like an Excel sheet where:
+- Rows = subjects (people, products, etc.)
+- Columns = objects (other people, categories, etc.)
+- Cell value = how strongly the relationship holds (0.0 to 1.0)
+
+```
+         Bob  Carol  David
+Alice [  0.0   1.0    0.0 ]   ← "Alice is parent of Carol"
+Bob   [  0.0   0.0    1.0 ]   ← "Bob is parent of David"
+```
+
+### How is this different from Prolog/Datalog?
+
+| Feature | Prolog/Datalog | TensorLogic |
+|---------|----------------|-------------|
+| Execution | CPU, sequential | GPU, parallel |
+| Uncertainty | No (true/false only) | Yes (0.0-1.0 confidence) |
+| Gradients | No | Yes (train neural networks) |
+| Temperature | No | Yes (control reasoning style) |
+
+### How is this different from knowledge graph embeddings (TransE, etc.)?
+
+| Feature | KG Embeddings | TensorLogic |
+|---------|---------------|-------------|
+| Interpretable | No (black box) | Yes (explicit rules) |
+| Provable | No | Yes (T=0 gives exact logic) |
+| Training required | Yes | Optional |
+| Missing links | Predicted | Predicted (T>0) or not (T=0) |
+
+**TensorLogic at T=0** = Classical logic solver (provable, no hallucinations)
+**TensorLogic at T>0** = Embedding-style generalization (pattern-based inference)
+
+### When should I use T=0 vs T>0?
+
+```
+T=0 (Deductive):
+  ✓ Legal/medical/safety applications
+  ✓ Database-style queries
+  ✓ When false positives are costly
+  ✓ Complete, reliable data
+
+T>0 (Analogical):
+  ✓ Recommendations and ranking
+  ✓ Incomplete or uncertain data
+  ✓ Training neural networks
+  ✓ Exploratory analysis
+```
 
 ## Development
 
